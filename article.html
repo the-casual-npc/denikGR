@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Article | Deník.GB</title>
+    <link rel="stylesheet" href="styles/article.css">
+    <style>
+        /* Sticky Footer Flex Framework Integration */
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+        .main-content-wrapper {
+            flex: 1 0 auto;
+        }
+        footer {
+            flex-shrink: 0;
+            margin-top: auto;
+        }
+
+        /* Loading Spinner CSS Animations */
+        @keyframes articleSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-spinner-circle {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #111;
+            border-radius: 50%;
+            animation: articleSpin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-top container">
+            <div class="logo"><a href="index.html">Deník.GB</a></div>
+        </div>
+        <nav>
+            <ul class="container">
+                <li><a href="category.html?name=Aktuality">Aktuality</a></li>
+                <li><a href="category.html?name=Obchody">Obchody</a></li>
+                <li><a href="category.html?name=Doprava">Doprava</a></li>
+                <li><a href="category.html?name=Události">Události</a></li>
+                <li><a href="category.html?name=Diskuze">Diskuze</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main Content wrapper containing both layout states -->
+    <div class="main-content-wrapper">
+        
+        <!-- Standardized Full-Page Loading State Element -->
+        <div id="articleLoadingState" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 100px 20px; color: #777; font-family: sans-serif;">
+            <div class="loading-spinner-circle"></div>
+            <div>Načítám článek z databáze...</div>
+        </div>
+
+        <!-- The main workspace remains hidden until Firestore payload drops in -->
+        <div class="container" id="articleWorkspace" style="display: none; margin-top: 20px;">
+            <div class="breadcrumbs">
+                <a href="index.html">Deník.GB</a> &gt; <a href="#" class="categorySwap">Category</a>
+            </div>
+
+            <div class="article-grid">
+                
+                <main class="article-body">
+                    <article>
+                        <header class="article-header">
+                            <span class="category categorySwap">Category</span>
+                            <h1 class="article-title">Title</h1>
+                            <div class="meta">
+                                <span class="author">Author</span> &bull; 
+                                <span class="date">Date</span>
+                            </div>
+                        </header>
+
+                        <div class="featured-image-container" id="mainCoverContainer">
+                            <img src="" alt="Cover" id="mainCoverImg">
+                            <div class="image-caption" id="mainCoverCaption">Cover Image Caption</div>
+                        </div>
+
+                        <div class="content"></div>
+                    </article>
+                </main>
+
+                <aside>
+                    <div class="widget">
+                        <h4 class="widget-title">Další články</h4>
+                        <ul class="related-list" id="randomArticlesContainer"></ul>
+                    </div>
+
+                    <div class="widget">
+                        <h4 class="widget-title">Sponzorováno</h4>
+                    </div>
+                </aside>
+
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>2026 Deník.GB. Žádná práva nevyhrazena.</p>
+        </div>
+    </footer>
+
+    <!-- Firebase SDK Systems Initialization -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDlID9gBLmU_gc7Of2BoXCGp7q4OYkYdZU",
+            authDomain: "denikgb-88622.firebaseapp.com",
+            projectId: "denikgb-88622",
+            storageBucket: "denikgb-88622.firebasestorage.app",
+            messagingSenderId: "563911796452",
+            appId: "1:563911796452:web:4378422b1a53c7ce072ef1",
+            measurementId: "G-KRLF9EPRGW"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+    <script src="scripts/article.js"></script>
+</body>
+</html>

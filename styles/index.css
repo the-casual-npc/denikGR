@@ -1,0 +1,340 @@
+/* --- Reset & Base Styles --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f9f9f9;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* --- Header & Navigation --- */
+header {
+    background-color: #fff;
+    border-bottom: 1px solid #eaeaea;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-top {
+    text-align: center;
+    padding: 20px 0 10px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.logo {
+    font-family: "Georgia", serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    color: #111;
+}
+
+nav {
+    display: flex;
+    justify-content: center;
+    padding: 15px 0;
+    background: #fff;
+}
+
+nav ul {
+    display: flex;
+    list-style: none;
+    gap: 25px;
+}
+
+nav a {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: #555;
+    transition: color 0.2s;
+}
+
+nav a:hover {
+    color: #0066cc;
+}
+
+/* --- Main Layout Grid --- */
+.news-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+    margin-top: 30px;
+    margin-bottom: 60px;
+}
+
+@media (min-width: 900px) {
+    .news-grid {
+        grid-template-columns: 3fr 1fr;
+    }
+}
+
+/* --- Articles & Cards --- */
+.card {
+    background: #fff;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    margin-bottom: 25px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.card-content {
+    padding: 20px;
+}
+
+.category {
+    display: inline-block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #0066cc;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.card-title {
+    font-family: "Georgia", serif;
+    font-size: 1.4rem;
+    line-height: 1.3;
+    margin-bottom: 10px;
+    color: #111;
+}
+
+.card-title:hover {
+    color: #0066cc;
+}
+
+.meta {
+    font-size: 0.8rem;
+    color: #777;
+    margin-bottom: 12px;
+}
+
+/* Featured Article (Top Story) */
+.featured-story .card {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+
+.featured-story img {
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (min-width: 768px) {
+    .featured-story .card {
+        grid-template-columns: 1.2fr 1fr;
+    }
+    .featured-story .card-content {
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .featured-story .card-title {
+        font-size: 2.2rem;
+    }
+}
+
+/* Secondary Grid */
+.sub-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+@media (min-width: 600px) {
+    .sub-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* --- Sidebar --- */
+aside {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.widget {
+    background: #fff;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.widget-title {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    border-bottom: 2px solid #111;
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+    letter-spacing: 0.5px;
+}
+
+.author-box {
+    text-align: center;
+}
+
+.author-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 12px;
+    background-color: #eee;
+}
+
+.author-name {
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 5px;
+}
+
+.author-bio {
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* --- Updated Trending Layout --- */
+.trending-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.trending-item {
+    display: flex;
+    gap: 12px;
+    align-items: center; /* Vertically centers text with image/rank */
+}
+
+.rank {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #bbb;
+    line-height: 1;
+    min-width: 18px; /* Ensures double digits don't break layout later */
+}
+
+.trending-thumb {
+    width: 55px;
+    height: 55px;
+    object-fit: cover; /* Prevents image distortion */
+    border-radius: 4px;
+    flex-shrink: 0; /* Prevents the image from squeezing */
+}
+
+.trending-text {
+    flex-grow: 1;
+}
+
+.trending-text a {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Truncates long titles gracefully at 2 lines */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.trending-text a:hover {
+    color: #0066cc;
+}
+
+.rank {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #ccc;
+    line-height: 1;
+}
+
+.trending-text a {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.trending-text a:hover {
+    color: #0066cc;
+}
+
+/* --- Footer --- */
+footer {
+    background-color: #111;
+    color: #aaa;
+    padding: 40px 0;
+    font-size: 0.9rem;
+    text-align: center;
+    border-top: 4px solid #0066cc;
+}
+
+footer p {
+    margin-bottom: 10px;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    list-style: none;
+}
+
+.footer-links a:hover {
+    color: #fff;
+}
+
+/* --- Sticky Footer Layout Fix --- */
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* This forces the main content area to expand and grow, 
+pushing the footer down even when there are no articles loaded yet */
+main.container {
+    flex: 1 0 auto;
+}
+
+footer {
+    flex-shrink: 0;
+    margin-top: auto; /* Absolute safety fallback to stay at the bottom */
+}

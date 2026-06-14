@@ -137,6 +137,8 @@ nav a:hover {
 @media (min-width: 900px) {
     .article-grid {
         grid-template-columns: 3fr 1fr;
+        /* CRITICAL: Prevents the sidebar from matching the main content's height */
+        align-items: start; 
     }
 }
 
@@ -250,6 +252,17 @@ aside {
     display: flex;
     flex-direction: column;
     gap: 30px;
+}
+
+@media (min-width: 900px) {
+    aside {
+        position: sticky;
+        /* Places the top edge of the element at the precise vertical middle of screen */
+        top: 50%; 
+        /* Pulls the element back up by exactly half its own height to achieve perfect centering */
+        transform: translateY(-50%); 
+        z-index: 10;
+    }
 }
 
 .widget {

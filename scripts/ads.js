@@ -11,7 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
         "5.mp4",
         "6.mp4",
         "7.png",
-        "8.gif"
+        "8.gif",
+        "9.png"
     ];
 
     // Track the last seen index so the user doesn't get the same ad twice in a row

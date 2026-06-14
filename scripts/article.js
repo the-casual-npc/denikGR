@@ -114,8 +114,8 @@ function fetchRandomSuggestions(excludeId) {
             // Randomize array index layout positions
             articlesPool.sort(() => 0.5 - Math.random());
 
-            // Limit slice extraction array index depth values to 3 items
-            const selectedArticles = articlesPool.slice(0, 3);
+            // Limit slice extraction array index depth values to 5 items
+            const selectedArticles = articlesPool.slice(0, 5);
 
             renderSuggestionsHTML(selectedArticles);
         })

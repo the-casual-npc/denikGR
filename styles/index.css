@@ -395,3 +395,37 @@ footer {
 .theme-toggle-btn:hover {
     transform: scale(1.05);
 }
+
+/* ==========================================================================
+   9. DYNAMIC AD WORKSPACE COMPONENTS
+   ========================================================================== */
+.ad-media-element {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.ad-mute-toggle {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 10;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.ad-mute-toggle:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.02);
+}

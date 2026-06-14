@@ -1,20 +1,56 @@
-/* --- Reset & Base Styles --- */
+/* ==========================================================================
+   1. COLOR PALETTE DEFINITIONS & UTILITIES
+   ========================================================================== */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #111111;
+    --border-color: #dddddd;
+    --card-bg: #fdfdfd;
+    --meta-text: #666666;
+    --panel-bg: #f8f9fa;
+    --link-hover: #0066cc;
+    --secondary-bg: #f9f9f9;
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --border-color: #333333;
+    --card-bg: #1a1a1a;
+    --meta-text: #aaaaaa;
+    --panel-bg: #1e1e1e;
+    --link-hover: #4da6ff;
+    --secondary-bg: #181818;
+}
+
+/* ==========================================================================
+   2. RESET & BASE STYLES
+   ========================================================================== */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+html, body {
+    height: 100%;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     line-height: 1.6;
-    color: #333;
-    background-color: #f9f9f9;
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 a {
     text-decoration: none;
     color: inherit;
+    transition: color 0.2s ease;
 }
 
 img {
@@ -29,19 +65,22 @@ img {
     padding: 0 20px;
 }
 
-/* --- Header & Navigation --- */
+/* ==========================================================================
+   3. HEADER & NAVIGATION
+   ========================================================================== */
 header {
-    background-color: #fff;
-    border-bottom: 1px solid #eaeaea;
+    background-color: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
     position: sticky;
     top: 0;
     z-index: 100;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .header-top {
     text-align: center;
     padding: 20px 0 10px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .logo {
@@ -50,14 +89,15 @@ header {
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: -1px;
-    color: #111;
+    color: var(--text-color);
 }
 
 nav {
     display: flex;
     justify-content: center;
     padding: 15px 0;
-    background: #fff;
+    background-color: var(--bg-color);
+    transition: background-color 0.3s ease;
 }
 
 nav ul {
@@ -70,15 +110,20 @@ nav a {
     font-weight: 600;
     font-size: 0.9rem;
     text-transform: uppercase;
-    color: #555;
-    transition: color 0.2s;
+    color: var(--meta-text);
 }
 
 nav a:hover {
-    color: #0066cc;
+    color: var(--link-hover);
 }
 
-/* --- Main Layout Grid --- */
+/* ==========================================================================
+   4. MAIN LAYOUT GRID & CONTENT
+   ========================================================================== */
+main.container {
+    flex: 1 0 auto; /* Sticky footer behavior logic */
+}
+
 .news-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -93,19 +138,20 @@ nav a:hover {
     }
 }
 
-/* --- Articles & Cards --- */
+/* Cards & Articles */
 .card {
-    background: #fff;
+    background: var(--card-bg);
     border-radius: 4px;
     overflow: hidden;
+    border: 1px solid var(--border-color);
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     margin-bottom: 25px;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .card-content {
@@ -117,7 +163,7 @@ nav a:hover {
     font-size: 0.75rem;
     text-transform: uppercase;
     font-weight: 700;
-    color: #0066cc;
+    color: var(--link-hover);
     margin-bottom: 8px;
     letter-spacing: 0.5px;
 }
@@ -127,16 +173,16 @@ nav a:hover {
     font-size: 1.4rem;
     line-height: 1.3;
     margin-bottom: 10px;
-    color: #111;
+    color: var(--text-color);
 }
 
 .card-title:hover {
-    color: #0066cc;
+    color: var(--link-hover);
 }
 
 .meta {
     font-size: 0.8rem;
-    color: #777;
+    color: var(--meta-text);
     margin-bottom: 12px;
 }
 
@@ -166,7 +212,7 @@ nav a:hover {
     }
 }
 
-/* Secondary Grid */
+/* Secondary Sub-Grid */
 .sub-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -179,7 +225,9 @@ nav a:hover {
     }
 }
 
-/* --- Sidebar --- */
+/* ==========================================================================
+   5. SIDEBAR & WIDGETS
+   ========================================================================== */
 aside {
     display: flex;
     flex-direction: column;
@@ -187,19 +235,22 @@ aside {
 }
 
 .widget {
-    background: #fff;
+    background: var(--card-bg);
     padding: 20px;
     border-radius: 4px;
+    border: 1px solid var(--border-color);
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .widget-title {
     font-size: 1.1rem;
     text-transform: uppercase;
-    border-bottom: 2px solid #111;
+    border-bottom: 2px solid var(--text-color);
     padding-bottom: 8px;
     margin-bottom: 15px;
     letter-spacing: 0.5px;
+    transition: border-color 0.3s ease;
 }
 
 .author-box {
@@ -211,22 +262,24 @@ aside {
     height: 80px;
     border-radius: 50%;
     margin: 0 auto 12px;
-    background-color: #eee;
+    background-color: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .author-name {
     font-weight: 700;
-    color: #111;
+    color: var(--text-color);
     margin-bottom: 5px;
 }
 
 .author-bio {
     font-size: 0.85rem;
-    color: #666;
+    color: var(--meta-text);
     line-height: 1.4;
 }
 
-/* --- Updated Trending Layout --- */
+/* Trending Engine Module Lists */
 .trending-list {
     list-style: none;
     display: flex;
@@ -237,23 +290,25 @@ aside {
 .trending-item {
     display: flex;
     gap: 12px;
-    align-items: center; /* Vertically centers text with image/rank */
+    align-items: center;
 }
 
 .rank {
-    font-size: 1.3rem;
+    font-size: 1.5rem;
     font-weight: 800;
-    color: #bbb;
+    color: var(--border-color); /* Dynamically lightens or darkens nicely */
     line-height: 1;
-    min-width: 18px; /* Ensures double digits don't break layout later */
+    min-width: 24px;
+    transition: color 0.3s ease;
 }
 
 .trending-thumb {
     width: 55px;
     height: 55px;
-    object-fit: cover; /* Prevents image distortion */
+    object-fit: cover;
     border-radius: 4px;
-    flex-shrink: 0; /* Prevents the image from squeezing */
+    border: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
 .trending-text {
@@ -261,48 +316,42 @@ aside {
 }
 
 .trending-text a {
-    font-size: 0.9rem;
-    font-weight: 600;
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-line-clamp: 2; /* Truncates long titles gracefully at 2 lines */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.trending-text a:hover {
-    color: #0066cc;
-}
-
-.rank {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #ccc;
-    line-height: 1;
-}
-
-.trending-text a {
     font-size: 0.95rem;
     font-weight: 600;
     line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    color: var(--text-color);
 }
 
 .trending-text a:hover {
-    color: #0066cc;
+    color: var(--link-hover);
 }
 
-/* --- Footer --- */
+/* ==========================================================================
+   6. FOOTER
+   ========================================================================== */
 footer {
     background-color: #111;
     color: #aaa;
     padding: 40px 0;
     font-size: 0.9rem;
     text-align: center;
-    border-top: 4px solid #0066cc;
+    border-top: 4px solid var(--link-hover);
+    flex-shrink: 0;
+    margin-top: auto;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-footer p {
-    margin-bottom: 10px;
+/* High contrast overrides for text inside dark-styled elements */
+[data-theme="light"] footer {
+    background-color: #111111; /* Keep traditional dark background signature look for footer in light mode if desired */
+    color: #999999;
+}
+[data-theme="light"] footer .footer-links a:hover {
+    color: #ffffff;
 }
 
 .footer-links {
@@ -312,29 +361,37 @@ footer p {
     list-style: none;
 }
 
+.footer-links a {
+    color: var(--meta-text);
+}
+
 .footer-links a:hover {
-    color: #fff;
+    color: var(--text-color);
 }
 
-/* --- Sticky Footer Layout Fix --- */
-
-html, body {
-    height: 100%;
-    margin: 0;
-}
-
-body {
+/* ==========================================================================
+   7. FLOATING THEME TOGGLE BUTTON INTERFACE
+   ========================================================================== */
+.theme-toggle-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--text-color);
+    color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 9999;
+    transition: transform 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-/* This forces the main content area to expand and grow, 
-pushing the footer down even when there are no articles loaded yet */
-main.container {
-    flex: 1 0 auto;
-}
-
-footer {
-    flex-shrink: 0;
-    margin-top: auto; /* Absolute safety fallback to stay at the bottom */
+.theme-toggle-btn:hover {
+    transform: scale(1.05);
 }

@@ -43,7 +43,7 @@
 
     <header>
         <div class="header-top container">
-            <div class="logo"><a href="index.html">Deník.GB</a></div>
+            <div class="logo"><a href="index.html">Deník.GR</a></div>
         </div>
         <nav>
             <ul class="container">
@@ -68,7 +68,7 @@
         <!-- The main workspace remains hidden until Firestore payload drops in -->
         <div class="container" id="articleWorkspace" style="display: none; margin-top: 20px;">
             <div class="breadcrumbs">
-                <a href="index.html">Deník.GB</a> &gt; <a href="#" class="categorySwap">Category</a>
+                <a href="index.html">Deník.GR</a> &gt; <a href="#" class="categorySwap">Category</a>
             </div>
 
             <div class="article-grid">
@@ -111,11 +111,43 @@
 
     <footer>
         <div class="container">
-            <p>2026 Deník.GB. Žádná práva nevyhrazena.</p>
+            <p>2026 Deník.GR. Žádná práva nevyhrazena.</p>
         </div>
     </footer>
 
-    <!-- Firebase SDK Systems Initialization -->
+    <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Přepnout tmavý režim">🌙</button>
+
+    <script>
+        const toggleBtn = document.getElementById('themeToggleBtn');
+        
+        // 1. Check local storage or system preference on load
+        const savedTheme = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            toggleBtn.innerText = '☀️';
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            toggleBtn.innerText = '🌙';
+        }
+
+        // 2. Listen for clicks to flip the state
+        toggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            let newTheme = 'light';
+            
+            if (currentTheme === 'light') {
+                newTheme = 'dark';
+                toggleBtn.innerText = '☀️';
+            } else {
+                toggleBtn.innerText = '🌙';
+            }
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+    </script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script>

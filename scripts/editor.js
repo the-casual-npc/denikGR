@@ -159,8 +159,6 @@ document.getElementById('modularArticleForm').addEventListener('submit', async f
 
         // 5. Push clean payload configuration metadata to Firestore
         await db.collection("articles").doc(nextIdString).set(articleDocument);
-
-        alert("Článek publikován");
         window.location.href = "index.html";
 
     } catch (error) {

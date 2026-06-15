@@ -104,43 +104,46 @@ if (googleBtn) {
 
 // Global Session Monitor Tracker Hook (Dynamic Dropdown Generator)
 auth.onAuthStateChanged((user) => {
-    const authWrapper = document.getElementById('authWrapper');
-    if (!authWrapper) return;
-    
-    if (user) {
-        // Fetch identity payload
-        const displayName = user.displayName || user.email.split('@')[0];
-        const isUserAdmin = user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    // A 50ms delay guarantees the layout DOM has fully settled from other files
+    setTimeout(() => {
+        const authWrapper = document.getElementById('authWrapper');
+        if (!authWrapper) return;
         
-        // Generate a feature-rich dropdown layout panel inside the navbar wrapper
-        authWrapper.innerHTML = `
-            <button id="userMenuBtn" class="login-trigger-btn" style="border-color: var(--text-color); color: var(--text-color);">
-                👤 ${displayName} ▾
-            </button>
-            <div id="userDropdown" class="user-dropdown-menu">
-                <button class="user-dropdown-item" onclick="alert('Coming soon: Úprava profilu')">Upravit Profil</button>
-                <button class="user-dropdown-item" onclick="alert('Coming soon: Nastavení')">Nastavení</button>
-                
-                ${isUserAdmin ? `<a href="editor.html" class="user-dropdown-item" style="color: var(--link-hover);">📝 Administrace/Editor</a>` : ''}
-                
-                <button id="logoutBtn" class="user-dropdown-item logout-item">Odhlásit se</button>
-            </div>
-        `;
-        
-        // Explicitly attach action callback hook onto generated log-out button link element
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            if (confirm('Opravdu se chcete odhlásit?')) {
-                auth.signOut().then(() => {
-                    alert('Byli jste odhlášeni.');
-                    window.location.reload();
-                });
-            }
-        });
-        
-    } else {
-        // Fallback UI reset to primitive action button triggers if user session vanishes
-        authWrapper.innerHTML = `<button id="openAuthBtn" class="login-trigger-btn">Přihlásit se</button>`;
-    }
+        if (user) {
+            // Fetch identity payload
+            const displayName = user.displayName || user.email.split('@')[0];
+            const isUserAdmin = user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+            
+            // Generate a feature-rich dropdown layout panel inside the navbar wrapper
+            authWrapper.innerHTML = `
+                <button id="userMenuBtn" class="login-trigger-btn" style="border-color: var(--text-color); color: var(--text-color);">
+                    👤 ${displayName} ▾
+                </button>
+                <div id="userDropdown" class="user-dropdown-menu">
+                    <button class="user-dropdown-item" onclick="alert('Coming soon: Úprava profilu')">Upravit Profil</button>
+                    <button class="user-dropdown-item" onclick="alert('Coming soon: Nastavení')">Nastavení</button>
+                    
+                    ${isUserAdmin ? `<a href="editor.html" class="user-dropdown-item" style="color: var(--link-hover);">📝 Administrace/Editor</a>` : ''}
+                    
+                    <button id="logoutBtn" class="user-dropdown-item logout-item">Odhlásit se</button>
+                </div>
+            `;
+            
+            // Explicitly attach action callback hook onto generated log-out button link element
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                if (confirm('Opravdu se chcete odhlásit?')) {
+                    auth.signOut().then(() => {
+                        alert('Byli jste odhlášeni.');
+                        window.location.reload();
+                    });
+                }
+            });
+            
+        } else {
+            // Fallback UI reset to primitive action button triggers if user session vanishes
+            authWrapper.innerHTML = `<button id="openAuthBtn" class="login-trigger-btn">Přihlásit se</button>`;
+        }
+    }, 50);
 });
 
 // Clean overlay form structures

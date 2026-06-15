@@ -1,0 +1,303 @@
+/* ==========================================================================
+   1. NAVBAR RESTRUCTURE PLUGINS (With coming soon link additions)
+   ========================================================================== */
+nav .nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+nav .nav-links {
+    display: flex;
+    list-style: none;
+    gap: 25px;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Clean gap balance separating elements */
+}
+
+/* Base style matching your standard navigation tags */
+.nav-extra-link {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: var(--meta-text);
+    transition: color 0.2s ease;
+}
+
+.nav-extra-link:hover {
+    color: var(--link-hover);
+}
+
+.login-trigger-btn {
+    background: transparent;
+    color: var(--meta-text);
+    border: 1px solid var(--border-color);
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    margin-left: 5px; /* Added spacing buffer pushing accent button out slightly */
+    transition: all 0.2s ease;
+}
+
+.login-trigger-btn:hover {
+    color: var(--link-hover);
+    border-color: var(--link-hover);
+    background-color: rgba(0, 102, 204, 0.05);
+}
+
+[data-theme="dark"] .login-trigger-btn:hover {
+    background-color: rgba(77, 166, 255, 0.08);
+}
+
+/* ==========================================================================
+   2. OVERLAY BASE & WINDOW INTERFACES
+   ========================================================================== */
+.auth-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+/* Active class applied via script layout actions */
+.auth-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.auth-modal {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 420px;
+    padding: 35px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    position: relative;
+    transform: translateY(-20px);
+    transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.auth-overlay.active .auth-modal {
+    transform: translateY(0);
+}
+
+.close-modal-btn {
+    position: absolute;
+    top: 15px;
+    right: 18px;
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    color: var(--meta-text);
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.close-modal-btn:hover {
+    color: var(--text-color);
+}
+
+/* ==========================================================================
+   3. NAVIGATION TABS MECHANICS
+   ========================================================================== */
+.auth-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 25px;
+    margin-top: 5px;
+    transition: border-color 0.3s ease;
+}
+
+.tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--meta-text);
+    cursor: pointer;
+    position: relative;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: color 0.2s ease;
+}
+
+.tab-btn:hover {
+    color: var(--text-color);
+}
+
+.tab-btn.active {
+    color: var(--text-color);
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--text-color);
+}
+
+/* ==========================================================================
+   4. OAUTH & THIRD-PARTY BRANDED COMPONENT CONNECTIONS
+   ========================================================================== */
+.oauth-section {
+    margin-bottom: 20px;
+}
+
+.google-auth-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+
+.google-auth-btn:hover {
+    background-color: var(--panel-bg);
+    border-color: var(--text-color);
+}
+
+.google-icon {
+    flex-shrink: 0;
+}
+
+.auth-divider {
+    text-align: center;
+    position: relative;
+    margin: 25px 0;
+}
+
+.auth-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background-color: var(--border-color);
+    z-index: 1;
+}
+
+.auth-divider span {
+    background-color: var(--card-bg);
+    padding: 0 15px;
+    font-size: 0.85rem;
+    color: var(--meta-text);
+    position: relative;
+    z-index: 2;
+    text-transform: uppercase;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ==========================================================================
+   5. MODULAR FORM WRAPPERS (With Smooth Transitions)
+   ========================================================================== */
+.auth-form-group {
+    margin-bottom: 20px;
+}
+
+/* Base style for the nickname field container */
+.auth-form-group.nickname-field {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-10px);
+    margin-bottom: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease-in-out, 
+                opacity 0.25s ease-in-out, 
+                transform 0.3s ease-in-out,
+                margin-bottom 0.35s ease-in-out;
+}
+
+/* Visual state when the field is opened/active */
+.auth-form-group.nickname-field.show {
+    max-height: 100px; /* Adjust if your labels/inputs are taller */
+    opacity: 1;
+    transform: translateY(0);
+    margin-bottom: 20px;
+}
+
+.auth-form-group label {
+    display: block;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--meta-text);
+    margin-bottom: 8px;
+    transition: color 0.3s ease;
+}
+
+.auth-form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.auth-form-group input:focus {
+    border-color: var(--text-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.15);
+}
+
+.auth-submit-btn {
+    width: 100%;
+    background-color: var(--text-color);
+    color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s ease;
+}
+
+.auth-submit-btn:hover {
+    opacity: 0.9;
+}

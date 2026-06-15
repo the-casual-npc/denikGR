@@ -5,39 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Článek | Deník.GR</title>
     <link rel="stylesheet" href="styles/article.css">
-    <style>
-        /* Sticky Footer Flex Framework Integration */
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
-        body {
-            display: flex;
-            flex-direction: column;
-        }
-        .main-content-wrapper {
-            flex: 1 0 auto;
-        }
-        footer {
-            flex-shrink: 0;
-            margin-top: auto;
-        }
-
-        /* Loading Spinner CSS Animations */
-        @keyframes articleSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .loading-spinner-circle {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #111;
-            border-radius: 50%;
-            animation: articleSpin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-    </style>
 </head>
 <body>
 
@@ -56,17 +23,14 @@
         </nav>
     </header>
 
-    <!-- Main Content wrapper containing both layout states -->
     <div class="main-content-wrapper">
         
-        <!-- Standardized Full-Page Loading State Element -->
-        <div id="articleLoadingState" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 100px 20px; color: #777; font-family: sans-serif;">
+        <div id="articleLoadingState">
             <div class="loading-spinner-circle"></div>
             <div>Načítám článek z databáze...</div>
         </div>
 
-        <!-- The main workspace remains hidden until Firestore payload drops in -->
-        <div class="container" id="articleWorkspace" style="display: none; margin-top: 20px;">
+        <div class="container" id="articleWorkspace">
             <div class="breadcrumbs">
                 <a href="index.html">Deník.GR</a> &gt; <a href="#" class="categorySwap">Category</a>
             </div>
@@ -101,7 +65,7 @@
 
                     <div class="widget">
                         <h4 class="widget-title">Sponzorováno</h4>
-                        <div id="dynamicAdContainer" style="position: relative; width: 100%; margin-top: 10px;"></div>
+                        <div id="dynamicAdContainer"></div>
                     </div>
                 </aside>
 
@@ -120,8 +84,6 @@
 
     <script>
         const toggleBtn = document.getElementById('themeToggleBtn');
-        
-        // 1. Check local storage or system preference on load
         const savedTheme = localStorage.getItem('theme');
         const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         
@@ -133,7 +95,6 @@
             toggleBtn.innerText = '🌙';
         }
 
-        // 2. Listen for clicks to flip the state
         toggleBtn.addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             let newTheme = 'light';

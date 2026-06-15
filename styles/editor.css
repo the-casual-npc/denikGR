@@ -1,0 +1,381 @@
+/* ==========================================================================
+   1. COLOR PALETTE DEFINITIONS & OVERRIDES
+   ========================================================================== */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #111111;
+    --border-color: #dddddd;
+    --card-bg: #fdfdfd;
+    --meta-text: #666666;
+    --panel-bg: #f8f9fa;
+    --link-hover: #0066cc;
+    --secondary-bg: #f9f9f9;
+}
+
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --border-color: #333333;
+    --card-bg: #1a1a1a;
+    --meta-text: #aaaaaa;
+    --panel-bg: #1e1e1e;
+    --link-hover: #4da6ff;
+    --secondary-bg: #181818;
+}
+
+/* ==========================================================================
+   2. RESET & BASE LAYOUTS
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+header {
+    background-color: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 20px 0;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.logo {
+    font-family: "Georgia", serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+}
+
+.logo a {
+    text-decoration: none;
+    color: var(--text-color);
+}
+
+/* ==========================================================================
+   3. COMPILER WORKSPACE VARIABLE INTEGRATION
+   ========================================================================== */
+.editor-container {
+    max-width: 750px;
+    margin: 40px auto;
+    background: var(--card-bg);
+    padding: 30px;
+    border: 1px solid var(--border-color);
+    border-top: 4px solid var(--text-color);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border-radius: 4px;
+    transition: background-color 0.3s ease, border-color 0.3s ease, border-top-color 0.3s ease;
+}
+
+.editor-container h2 {
+    color: var(--text-color);
+    transition: color 0.3s ease;
+    margin-bottom: 5px;
+}
+
+.editor-sub-notice {
+    color: var(--meta-text); 
+    font-size: 0.9rem; 
+    margin-bottom: 25px; 
+    transition: color 0.3s ease;
+}
+
+.form-group {
+    margin-bottom: 22px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    color: var(--meta-text);
+    transition: color 0.3s ease;
+}
+
+.form-group input[type="text"], 
+.form-group input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: inherit;
+    box-sizing: border-box;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.form-group input:focus {
+    border-color: var(--text-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.15);
+}
+
+.file-upload-input {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-family: inherit;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.category-select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.category-select-wrapper select {
+    width: 100%;
+    padding: 12px 40px 12px 14px;
+    border: 1px solid var(--border-color);
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--text-color);
+    box-sizing: border-box;
+    border-radius: 6px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--bg-color);
+    transition: all 0.2s ease;
+}
+
+.category-select-wrapper select:focus {
+    border-color: var(--text-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.15);
+}
+
+.category-select-wrapper::after {
+    content: "";
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23888888' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    pointer-events: none;
+}
+
+.modules-workspace-header {
+    margin-top: 35px; 
+    margin-bottom: 5px; 
+    text-transform: uppercase; 
+    font-size: 0.85rem; 
+    color: var(--meta-text); 
+    letter-spacing: 0.5px; 
+    transition: color 0.3s ease;
+}
+
+/* ==========================================================================
+   4. MODULAR CONTENT BLOCKS WORKSPACE
+   ========================================================================== */
+.blocks-workspace {
+    margin: 30px 0;
+    border-top: 2px dashed var(--border-color);
+    padding-top: 25px;
+    transition: border-color 0.3s ease;
+}
+
+.block-item {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-left: 5px solid var(--text-color);
+    padding: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    border-radius: 0 6px 6px 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.01);
+    transition: background-color 0.3s ease, border-color 0.3s ease, border-left-color 0.3s ease;
+}
+
+.block-item .block-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+    transition: border-color 0.3s ease;
+}
+
+.block-item .block-type-badge {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: bold;
+    color: var(--meta-text);
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.block-item .remove-block-btn {
+    background: none;
+    color: #ff4d4d;
+    border: 1px solid #ffccd0;
+    padding: 5px 12px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.block-item .remove-block-btn:hover { 
+    background: #ff4d4d; 
+    color: white;
+    border-color: #ff4d4d;
+}
+
+.block-item textarea, 
+.block-item input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-family: inherit;
+    margin-bottom: 10px;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.block-item textarea { height: 110px; resize: vertical; }
+
+/* ==========================================================================
+   5. CONTROL PANEL & SUBMISSIONS
+   ========================================================================== */
+.polished-control-panel {
+    background: var(--panel-bg);
+    border: 1px dashed var(--border-color);
+    padding: 24px;
+    border-radius: 8px;
+    margin-bottom: 40px;
+    text-align: center;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.polished-control-panel .panel-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    font-weight: bold;
+    color: var(--meta-text);
+    margin-bottom: 14px;
+    letter-spacing: 0.8px;
+    transition: color 0.3s ease;
+}
+
+.button-action-group {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.action-node-btn {
+    background: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 12px 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+
+.action-node-btn:hover {
+    border-color: var(--text-color);
+    background: var(--panel-bg);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+.submit-btn {
+    background: var(--text-color);
+    color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    padding: 16px 30px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    width: 100%;
+    font-size: 1rem;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+}
+
+.submit-btn:hover { opacity: 0.9; }
+.submit-btn:disabled { background: var(--border-color); color: var(--meta-text); cursor: not-allowed; }
+
+/* ==========================================================================
+   6. FOOTER & FIXED THEME TOGGLES
+   ========================================================================== */
+footer {
+    background-color: #111;
+    color: #aaa;
+    padding: 40px 0;
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: auto;
+}
+
+.theme-toggle-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--text-color);
+    color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 9999;
+    transition: transform 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+.theme-toggle-btn:hover { transform: scale(1.05); }

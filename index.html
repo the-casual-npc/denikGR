@@ -21,27 +21,22 @@
                 <li><a href="category.html?name=Diskuze">Diskuze</a></li>
             </ul>
         </nav>
-        
     </header>
 
     <main class="container">
         <div class="news-grid">
             
             <section class="main-stories">
-                
                 <div class="featured-story" id="featuredContainer">
                     <div class="category-feed-grid" id="categoryFeedContainer">
-            <!-- Clean, non-disruptive loading layout placeholder -->
-            <div style="grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; padding: 60px 0; color: #777; font-family: sans-serif;">
-                <div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #111; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;"></div>
-                <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
-                <div>Načítám nejnovější příspěvky...</div>
-            </div>
-        </div>
+                        <div class="homepage-loader-placeholder">
+                            <div class="spinner"></div>
+                            <div>Načítám nejnovější příspěvky...</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="sub-grid" id="subGridContainer"></div>
-
             </section>
 
             <aside>
@@ -54,7 +49,7 @@
                 <div class="widget author-box">
                     <img class="author-avatar" src="img/pfps/casual.webp" alt="the_casual_npc">
                     <div class="author-name">the_casual_npc</div>
-                    <p class="author-bio">IT Technik zodpovědný za stránku Deník.GR a za hosting serveru. Vlastní projekty Tenebrie a Command Block</p>
+                    <p class="author-bio">IT Technik zodpovědný za stránku Deník.GR and za hosting serveru. Vlastní projekty Tenebrie a Command Block</p>
                 </div>
 
                 <div class="widget author-box">
@@ -65,7 +60,7 @@
 
                 <div class="widget">
                     <h4 class="widget-title">Sponzorováno</h4>
-                    <div id="dynamicAdContainer" style="position: relative; width: 100%; margin-top: 10px;"></div>
+                    <div id="dynamicAdContainer" class="ad-layout-anchor"></div>
                 </div>
             </aside>
 
@@ -82,8 +77,6 @@
 
     <script>
         const toggleBtn = document.getElementById('themeToggleBtn');
-        
-        // 1. Check local storage or system preference on load
         const savedTheme = localStorage.getItem('theme');
         const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         
@@ -95,7 +88,6 @@
             toggleBtn.innerText = '🌙';
         }
 
-        // 2. Listen for clicks to flip the state
         toggleBtn.addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             let newTheme = 'light';

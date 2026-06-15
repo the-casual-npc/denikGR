@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const videoElement = document.getElementById("adVideo");
             const muteButton = document.getElementById("adMuteBtn");
 
-            videoElement.volume = 0.5;
+            videoElement.volume = 0.1;
 
             // Attempt to play unmuted right away
             videoElement.muted = false;

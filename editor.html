@@ -18,16 +18,16 @@
     <main class="container">
         <div class="editor-container">
             <h2>Kompilátor Článků</h2>
-            <p class="editor-sub-notice">Editor pro přidání nového článku na Deník.GR. Vyžaduje heslo.</p>
+            <p class="editor-sub-notice">Editor pro přidání nového článku. Články mohou psát pouze vybraní uživatelé.</p>
             
             <form id="modularArticleForm">
                 <div class="form-group">
-                    <label>Název Článku (Title)</label>
+                    <label>Název Článku</label>
                     <input type="text" id="title" required placeholder="Např. Obchodní dům v plamenech kvůli creeperovi...">
                 </div>
 
                 <div class="form-group">
-                    <label>Kategorie zpravodajství</label>
+                    <label>Kategorie</label>
                     <div class="category-select-wrapper">
                         <select id="category" required>
                             <option value="Aktuality">Aktuality</option>
@@ -39,12 +39,12 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Vybrat Hlavní Náhledový Obrázek (Main Cover Image)</label>
+                    <label>Vybrat Hlavní Náhledový Obrázek</label>
                     <input type="file" id="coverImageFile" accept="image/*" class="file-upload-input" required>
                 </div>
 
                 <div class="form-group">
-                    <label>Popisek pod hlavní náhledový obrázek</label>
+                    <label>Popisek náhledového obrázku</label>
                     <input type="text" id="coverCaption" required placeholder="Např. Pohled na zničenou bránu obchodu z dnešního rána">
                 </div>
 

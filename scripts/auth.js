@@ -44,6 +44,7 @@ document.addEventListener('click', (e) => {
 // Client Tab Interceptor Mechanics
 function switchAuthTab(mode) {
     const nicknameInput = document.getElementById('authNickname');
+    clearAuthError(); // Clear any existing errors when switching tabs
 
     if (mode === 'login') {
         tabLogin.classList.add('active');
@@ -63,6 +64,7 @@ function switchAuthTab(mode) {
 // Generic form submission handler
 document.getElementById('authForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    clearAuthError();
     
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
@@ -76,14 +78,14 @@ document.getElementById('authForm').addEventListener('submit', function(e) {
                 return user.updateProfile({ displayName: nickname });
             })
             .then(() => {
-                alert('Registrace proběhla úspěšně.');
+                // Success: Smoothly close modal without primitive alerts
                 closeAuthModalAndReset();
             })
             .catch((error) => { handleAuthError(error); });
     } else {
         auth.signInWithEmailAndPassword(email, password)
             .then(() => {
-                alert('Přihlášení proběhlo úspěšně!');
+                // Success: Smoothly close modal without primitive alerts
                 closeAuthModalAndReset();
             })
             .catch((error) => { handleAuthError(error); });
@@ -95,9 +97,10 @@ const googleProvider = new firebase.auth.GoogleAuthProvider();
 const googleBtn = document.querySelector('.google-auth-btn');
 if (googleBtn) {
     googleBtn.addEventListener('click', function() {
+        clearAuthError();
         auth.signInWithPopup(googleProvider)
             .then((result) => {
-                alert(`Úspěšně přihlášen přes Google jako: ${result.user.displayName || result.user.email}`);
+                // Success: Smoothly close modal without primitive alerts
                 closeAuthModalAndReset();
             })
             .catch((error) => { handleAuthError(error); });
@@ -120,7 +123,7 @@ auth.onAuthStateChanged((user) => {
             // Generate a feature-rich dropdown layout panel inside the navbar wrapper
             authWrapper.innerHTML = `
                 <button id="userMenuBtn" class="login-trigger-btn" style="border-color: var(--text-color); color: var(--text-color);">
-                    ${displayName} ▾
+                    👤 ${displayName} ▾
                 </button>
                 <div id="userDropdown" class="user-dropdown-menu">
                     <button class="user-dropdown-item" onclick="alert('Coming soon: Úprava profilu')">Upravit Profil</button>
@@ -134,9 +137,9 @@ auth.onAuthStateChanged((user) => {
             
             // Explicitly attach action callback hook onto generated log-out button link element
             document.getElementById('logoutBtn').addEventListener('click', () => {
+                // Kept confirm box here to prevent accidental logouts
                 if (confirm('Opravdu se chcete odhlásit?')) {
                     auth.signOut().then(() => {
-                        alert('Byli jste odhlášeni.');
                         window.location.reload();
                     });
                 }
@@ -153,6 +156,38 @@ auth.onAuthStateChanged((user) => {
 function closeAuthModalAndReset() {
     authOverlay.classList.remove('active');
     document.getElementById('authForm').reset();
+    clearAuthError();
+}
+
+// Helper to inject error messages inline inside the modal
+function displayInlineError(msg) {
+    let errorContainer = document.getElementById('authErrorMsg');
+    
+    // Create the error element dynamically if it doesn't exist yet
+    if (!errorContainer) {
+        errorContainer = document.createElement('div');
+        errorContainer.id = 'authErrorMsg';
+        errorContainer.style.color = '#e04a4a';
+        errorContainer.style.fontSize = '0.85rem';
+        errorContainer.style.fontWeight = '600';
+        errorContainer.style.marginTop = '15px';
+        errorContainer.style.textAlign = 'center';
+        
+        // Inject right above the form fields or container bottom
+        const form = document.getElementById('authForm');
+        if (form) {
+            form.appendChild(errorContainer);
+        }
+    }
+    errorContainer.innerText = msg;
+}
+
+// Helper to clear errors
+function clearAuthError() {
+    const errorContainer = document.getElementById('authErrorMsg');
+    if (errorContainer) {
+        errorContainer.innerText = '';
+    }
 }
 
 // Friendly localization handler for typical Firebase structural exceptions
@@ -160,19 +195,19 @@ function handleAuthError(error) {
     console.error("Auth Error Code:", error.code, error.message);
     switch (error.code) {
         case 'auth/email-already-in-use':
-            alert('Tento e-mail už používá jiný účet.');
+            displayInlineError('Tento e-mail už používá jiný účet.');
             break;
         case 'auth/weak-password':
-            alert('Heslo je příliš slabé. Zvolte alespoň 6 znaků.');
+            displayInlineError('Heslo je příliš slabé. Zvolte alespoň 6 znaků.');
             break;
         case 'auth/wrong-password':
         case 'auth/user-not-found':
-            alert('Nesprávný e-mail nebo heslo.');
+            displayInlineError('Nesprávný e-mail nebo heslo.');
             break;
         case 'auth/invalid-email':
-            alert('Zadaná e-mailová adresa nemá správný formát.');
+            displayInlineError('Zadaná e-mailová adresa nemá správný formát.');
             break;
         default:
-            alert(`Chyba: ${error.message}`);
+            displayInlineError(`Chyba: ${error.message}`);
     }
 }

@@ -123,13 +123,13 @@ auth.onAuthStateChanged((user) => {
             // Generate a feature-rich dropdown layout panel inside the navbar wrapper
             authWrapper.innerHTML = `
                 <button id="userMenuBtn" class="login-trigger-btn" style="border-color: var(--text-color); color: var(--text-color);">
-                    👤 ${displayName} ▾
+                    ${displayName} ▾
                 </button>
                 <div id="userDropdown" class="user-dropdown-menu">
                     <button class="user-dropdown-item" onclick="alert('Coming soon: Úprava profilu')">Upravit Profil</button>
                     <button class="user-dropdown-item" onclick="alert('Coming soon: Nastavení')">Nastavení</button>
                     
-                    ${isUserAdmin ? `<a href="editor.html" class="user-dropdown-item" style="color: var(--link-hover);">📝 Administrace/Editor</a>` : ''}
+                    ${isUserAdmin ? `<a href="editor.html" class="user-dropdown-item" style="color: var(--link-hover);">Editor</a>` : ''}
                     
                     <button id="logoutBtn" class="user-dropdown-item logout-item">Odhlásit se</button>
                 </div>
@@ -137,12 +137,10 @@ auth.onAuthStateChanged((user) => {
             
             // Explicitly attach action callback hook onto generated log-out button link element
             document.getElementById('logoutBtn').addEventListener('click', () => {
-                // Kept confirm box here to prevent accidental logouts
-                if (confirm('Opravdu se chcete odhlásit?')) {
-                    auth.signOut().then(() => {
-                        window.location.reload();
-                    });
-                }
+                // Removed the confirmation dialog block to log out instantly
+                auth.signOut().then(() => {
+                    window.location.reload();
+                });
             });
             
         } else {

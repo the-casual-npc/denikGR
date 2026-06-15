@@ -2,8 +2,8 @@ const auth = firebase.auth();
 
 // 1. Array of master administrator/editor account emails
 const ADMIN_EMAILS = [
-    "casual.npc.guy@gmail.com",
-    "matochakareljr@gmail.com"
+    "matochakareljr@gmail.com",
+    "casual.npc.guy@gmail.com"
 ];
 
 // Modal DOM Access Selectors
@@ -127,8 +127,8 @@ auth.onAuthStateChanged((user) => {
                     ${displayName} ▾
                 </button>
                 <div id="userDropdown" class="user-dropdown-menu">
-                    <button class="user-dropdown-item" onclick="alert('Tati funkce ještě není dostupná')">Upravit Profil</button>
-                    <button class="user-dropdown-item" onclick="alert('Tati funkce ještě není dostupná')">Nastavení</button>
+                    <button class="user-dropdown-item" onclick="alert('Tato funkce ještě není dostupná')">Upravit Profil</button>
+                    <button class="user-dropdown-item" onclick="alert('Tato funkce ještě není dostupná')">Nastavení</button>
                     
                     ${isUserAdmin ? `<a href="editor.html" class="user-dropdown-item" style="color: var(--link-hover);">Editor</a>` : ''}
                     

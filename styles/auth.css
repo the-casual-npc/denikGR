@@ -301,3 +301,73 @@ nav .nav-links {
 .auth-submit-btn:hover {
     opacity: 0.9;
 }
+
+/* ==========================================================================
+   6. USER NAVBAR DROPDOWN CONTEXTS
+   ========================================================================== */
+.user-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* Floating dynamic context panel */
+.user-dropdown-menu {
+    position: absolute;
+    top: 110%;
+    right: 0;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    min-width: 180px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    padding: 6px 0;
+    
+    /* Animation hidden states */
+    opacity: 0;
+    transform: translateY(-5px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Toggle expansion window script trigger hook */
+.user-dropdown-menu.open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.user-dropdown-item {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-color);
+    text-decoration: none;
+    text-align: left;
+    background: none;
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.user-dropdown-item:hover {
+    background-color: var(--panel-bg);
+    color: var(--link-hover);
+}
+
+/* Specialized destructive separator item for Logging Out */
+.user-dropdown-item.logout-item {
+    border-top: 1px solid var(--border-color);
+    color: #e04a4a;
+    margin-top: 4px;
+    padding-top: 12px;
+}
+
+.user-dropdown-item.logout-item:hover {
+    background-color: rgba(224, 74, 74, 0.06);
+    color: #ff5c5c;
+}

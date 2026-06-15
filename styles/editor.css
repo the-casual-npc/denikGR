@@ -65,7 +65,7 @@ header {
     letter-spacing: -1px;
 }
 
-.logo a {
+a {
     text-decoration: none;
     color: var(--text-color);
 }
@@ -379,3 +379,55 @@ footer {
     transition: transform 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 .theme-toggle-btn:hover { transform: scale(1.05); }
+
+/* ==========================================================================
+   3. HEADER & NAVIGATION
+   ========================================================================== */
+header {
+    background-color: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.header-top {
+    text-align: center;
+    padding: 20px 0 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+    font-family: "Georgia", serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    color: var(--text-color);
+}
+
+nav {
+    display: flex;
+    justify-content: center;
+    padding: 15px 0;
+    background-color: var(--bg-color);
+    transition: background-color 0.3s ease;
+}
+
+nav ul {
+    display: flex;
+    list-style: none;
+    gap: 25px;
+}
+
+nav a {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: var(--meta-text);
+}
+
+nav a:hover {
+    color: var(--link-hover);
+}

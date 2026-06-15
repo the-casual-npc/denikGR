@@ -26,13 +26,14 @@ function createBlockNode(type) {
             <textarea placeholder="Sem napiš text odstavce..." required class="content-field"></textarea>
         `;
     } else if (type === 'image') {
+        // SWAPPED INPUT URL FOR LOCAL FILE CHIPS
         innerFormHTML = `
             <div class="block-meta">
                 <span class="block-type-badge">📷 Obrázek z terénu</span>
                 <button type="button" class="remove-block-btn" onclick="deleteBlockNode('${uniqueId}')">Odstranit</button>
             </div>
-            <input type="file" accept="image/*" required class="file-field" style="display:block; width:100%; margin-bottom:10px; background:var(--secondary-bg); padding:8px; border-radius:4px; color:var(--text-color); border:1px solid var(--border-color);">
-            <input type="text" placeholder="Titulek pod obrázkem (nepovinné)..." class="caption-field">
+            <input type="file" accept="image/*" required class="file-field" style="display:block; width:100%; margin-bottom:10px; background:#f0f2f5; padding:8px; border-radius:4px; box-sizing:border-box;">
+            <input type="text" placeholder="Popisek pod obrázek (např. Pohled z okna radnice)" class="caption-field">
         `;
     } else if (type === 'blockquote') {
         innerFormHTML = `
@@ -40,8 +41,7 @@ function createBlockNode(type) {
                 <span class="block-type-badge">💬 Výpověď / Citace</span>
                 <button type="button" class="remove-block-btn" onclick="deleteBlockNode('${uniqueId}')">Odstranit</button>
             </div>
-            <textarea placeholder="„Sem napiš citaci svědka nebo citovanou osobu...“" required class="content-field" style="font-style: italic; border-left: 3px solid var(--link-hover);"></textarea>
-            <input type="text" placeholder="- Jméno autora citace (např. Jan Žižka, místní občan)" class="citation-author-field" style="margin-top: 8px; width: 100%;">
+            <textarea placeholder="„Sem vlož přímou řeč svědka...“" required class="content-field"></textarea>
         `;
     }
 
@@ -49,91 +49,91 @@ function createBlockNode(type) {
     workspace.appendChild(blockWrapper);
 }
 
-function deleteBlockNode(id) {
-    const targetBlock = document.getElementById(id);
-    if (targetBlock) {
-        targetBlock.remove();
-    }
+window.deleteBlockNode = function(id) {
+    const target = document.getElementById(id);
+    if (target) target.remove();
+};
+
+// Helper function to safely stream individual files to Firebase Storage bucket
+function uploadFileAsync(fileObject) {
+    return new Promise((resolve, reject) => {
+        if (!fileObject) {
+            resolve("https://picsum.photos/800/500"); // Fallback safety asset
+            return;
+        }
+        // Unique tracking paths based on precise system timestamps to avoid overwrites
+        const uniqueFilename = `${Date.now()}_${fileObject.name}`;
+        const storageRef = storage.ref(`articles/${uniqueFilename}`);
+        
+        storageRef.put(fileObject)
+            .then(snapshot => snapshot.ref.getDownloadURL())
+            .then(downloadURL => resolve(downloadURL))
+            .catch(err => reject(err));
+    });
 }
 
-// Global Submission Pipeline execution Interceptor Hook
+// Master Submission Sequence Loop
 document.getElementById('modularArticleForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
-    // Query submit button directly using form context class
-    const submitBtn = this.querySelector('.submit-btn');
-    const originalBtnText = submitBtn.innerText;
+    const submitBtn = e.target.querySelector('.submit-btn');
+    const DOMBlocks = workspace.querySelectorAll('.block-item');
     
-    submitBtn.innerText = "Nahrávání článku...";
+    if (DOMBlocks.length === 0) {
+        alert("Článek musí obsahovat alespoň jeden funkční modul!");
+        return;
+    }
+
+    const firstBlockType = DOMBlocks[0].getAttribute('data-type');
+    if (firstBlockType === 'image') {
+        alert("Strukturální chyba: Prvním elementem článku nesmí být Obrázek, protože hned nad ním se zobrazuje velký náhledový krycí obrázek (Cover image).");
+        return;
+    }
+
+    // Change interface button state so Omega doesn't click twice while big images upload
+    submitBtn.innerText = "Nahrávám obrázky a texty na server (Čekejte)...";
     submitBtn.disabled = true;
 
     try {
-        // Verification: Ensure an account session is still currently alive
-        const currentUser = firebase.auth().currentUser;
-        if (!currentUser) {
-            alert("Chyba: K publikování článku musíte být přihlášeni!");
-            submitBtn.innerText = originalBtnText;
-            submitBtn.disabled = false;
-            return;
-        }
-
-        // Corrected mapping IDs to match your precise HTML values
         const title = document.getElementById('title').value.trim();
         const category = document.getElementById('category').value;
-        const coverFileInput = document.getElementById('coverImageFile').files[0];
-        const finalCoverCaption = document.getElementById('coverCaption').value.trim();
+        const coverCaptionInput = document.getElementById('coverCaption').value.trim();
+        const finalCoverCaption = coverCaptionInput || `Snímek pořízen redaktorem SH_Omega`;
 
-        // 1. Upload Cover Image to Firebase Storage bucket paths
-        let uploadedCoverUrl = "";
-        // Safely check for storage availability since it gets initiated elsewhere
-        const storageInstance = typeof storage !== 'undefined' ? storage : firebase.storage();
-        
-        if (coverFileInput) {
-            const coverStorageRef = storageInstance.ref(`covers/${Date.now()}_${coverFileInput.name}`);
-            const uploadSnapshot = await coverStorageRef.put(coverFileInput);
-            uploadedCoverUrl = await uploadSnapshot.ref.getDownloadURL();
-        }
+        // 1. Core Upload Action: Handle the main cover image file stream first
+        const coverFileElement = document.getElementById('coverImageFile').files[0];
+        const uploadedCoverUrl = await uploadFileAsync(coverFileElement);
 
-        // 2. Loop compile arrays building child blocks configurations structural components
-        const blockElementsArray = workspace.querySelectorAll('.block-item');
-        const blocksPayloadArray = [];
+        // 2. Loop and process content items arrays sequentially using async promises
+        let blocksPayloadArray = [];
 
-        for (let blockElement of blockElementsArray) {
-            const blockType = blockElement.getAttribute('data-type');
+        for (let blockNode of DOMBlocks) {
+            const type = blockNode.getAttribute('data-type');
             
-            if (blockType === 'paragraph') {
-                const textValue = blockElement.querySelector('.content-field').value.trim();
-                blocksPayloadArray.push({
-                    type: 'paragraph',
-                    value: textValue
+            if (type === 'paragraph') {
+                const val = blockNode.querySelector('.content-field').value.trim();
+                blocksPayloadArray.push({ type: "paragraph", content: val });
+            } 
+            else if (type === 'blockquote') {
+                const val = blockNode.querySelector('.content-field').value.trim();
+                blocksPayloadArray.push({ type: "blockquote", content: val });
+            } 
+            else if (type === 'image') {
+                const inlineFileObject = blockNode.querySelector('.file-field').files[0];
+                const caption = blockNode.querySelector('.caption-field').value.trim();
+                
+                // Pause current loop thread execution until the binary upload returns its reference string link
+                const uploadedInlineImageUrl = await uploadFileAsync(inlineFileObject);
+                
+                blocksPayloadArray.push({ 
+                    type: "image", 
+                    url: uploadedInlineImageUrl, 
+                    caption: caption 
                 });
-            } else if (blockType === 'blockquote') {
-                const quoteValue = blockElement.querySelector('.content-field').value.trim();
-                const authorValue = blockElement.querySelector('.citation-author-field').value.trim();
-                blocksPayloadArray.push({
-                    type: 'blockquote',
-                    value: quoteValue,
-                    author: authorValue
-                });
-            } else if (blockType === 'image') {
-                const imgFileInput = blockElement.querySelector('.file-field').files[0];
-                const captionValue = blockElement.querySelector('.caption-field').value.trim();
-
-                if (imgFileInput) {
-                    const blockImgStorageRef = storageInstance.ref(`content_images/${Date.now()}_${imgFileInput.name}`);
-                    const imgUploadSnapshot = await blockImgStorageRef.put(imgFileInput);
-                    const imgDownloadUrl = await imgUploadSnapshot.ref.getDownloadURL();
-
-                    blocksPayloadArray.push({
-                        type: 'image',
-                        value: imgDownloadUrl,
-                        caption: captionValue
-                    });
-                }
             }
         }
 
-        // 3. Fetch Next Custom Incremented String ID Identifier from Firestore collection node
+        // 3. Request the document index count tracking string from Firestore collection node
         const querySnapshot = await db.collection("articles")
             .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
             .limit(1)
@@ -149,24 +149,24 @@ document.getElementById('modularArticleForm').addEventListener('submit', async f
         // 4. Group data parameters into structural JSON formats blueprint
         const articleDocument = {
             title: title,
-            author: currentUser.displayName || currentUser.email.split('@')[0],
+            author: "SH_Omega",
             category: category,
             coverImage: uploadedCoverUrl,
             coverCaption: finalCoverCaption,
             date: firebase.firestore.Timestamp.now(),
-            blocks: blocksPayloadArray
+            blocks: blocksPayloadArray,
         };
 
         // 5. Push clean payload configuration metadata to Firestore
         await db.collection("articles").doc(nextIdString).set(articleDocument);
 
-        alert("Článek i se všemi obrázky byl úspěšně publikován!");
+        alert("Článek publikován");
         window.location.href = "index.html";
 
     } catch (error) {
         console.error("Critical error in pipeline loop execution:", error);
-        alert("Operace selhala! Zkontrolujte internetové připojení, vaše oprávnění k zápisu, nebo formát obrázků.");
-        submitBtn.innerText = originalBtnText;
+        alert("Operace selhala.");
+        submitBtn.innerText = "Zveřejnit článek";
         submitBtn.disabled = false;
     }
 });

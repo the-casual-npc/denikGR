@@ -1,7 +1,9 @@
 const auth = firebase.auth();
 
-// Define your master administrator/editor account email here
-const ADMIN_EMAIL = "jmeno@domena.cz"; 
+// 1. Array of master administrator/editor account emails
+const ADMIN_EMAILS = [
+    "casual.npc.guy@gmail.com"
+];
 
 // Modal DOM Access Selectors
 const authOverlay = document.getElementById('authOverlay');
@@ -104,7 +106,6 @@ if (googleBtn) {
 
 // Global Session Monitor Tracker Hook (Dynamic Dropdown Generator)
 auth.onAuthStateChanged((user) => {
-    // A 50ms delay guarantees the layout DOM has fully settled from other files
     setTimeout(() => {
         const authWrapper = document.getElementById('authWrapper');
         if (!authWrapper) return;
@@ -112,12 +113,14 @@ auth.onAuthStateChanged((user) => {
         if (user) {
             // Fetch identity payload
             const displayName = user.displayName || user.email.split('@')[0];
-            const isUserAdmin = user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+            
+            // Check if the authenticated email exists inside our ADMIN_EMAILS array
+            const isUserAdmin = user.email && ADMIN_EMAILS.map(e => e.toLowerCase()).includes(user.email.toLowerCase());
             
             // Generate a feature-rich dropdown layout panel inside the navbar wrapper
             authWrapper.innerHTML = `
                 <button id="userMenuBtn" class="login-trigger-btn" style="border-color: var(--text-color); color: var(--text-color);">
-                    👤 ${displayName} ▾
+                    ${displayName} ▾
                 </button>
                 <div id="userDropdown" class="user-dropdown-menu">
                     <button class="user-dropdown-item" onclick="alert('Coming soon: Úprava profilu')">Upravit Profil</button>

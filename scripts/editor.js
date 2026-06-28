@@ -162,7 +162,7 @@ if (anecdoteForm) {
         }
 
         const submitBtn = document.getElementById('anecdoteSubmitBtn');
-        submitBtn.innerText = "Nahrávám multimédia na server...";
+        submitBtn.innerText = "Nahrávám anekdotu...";
         submitBtn.disabled = true;
 
         try {
@@ -192,17 +192,17 @@ if (anecdoteForm) {
                 .limit(1)
                 .get();
 
-            let nextIdString = "001";
+            let nextIdString = "0001";
             if (!querySnapshot.empty) {
                 const highestDocId = querySnapshot.docs[0].id;
                 const numericId = parseInt(highestDocId, 10);
-                nextIdString = String(numericId + 1).padStart(3, '0');
+                nextIdString = String(numericId + 1).padStart(4, '0');
             }
 
             // 3. Assemble complete structured document mapping currentLoggedAuthor profile
             const anecdoteDocument = {
                 author: currentLoggedAuthor,
-                date: new Date().toLocaleDateString('cs-CZ'),
+                date: firebase.firestore.Timestamp.now(),
                 type: detectedType,
                 url: downloadURL,
                 relatedIds: Array.from(attachedArticleIds)

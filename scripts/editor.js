@@ -19,12 +19,12 @@ if (workspace) {
    ========================================================================== */
 firebase.auth().onAuthStateChanged(async (user) => {
     if (user) {
-        // Default fallback strategy
+        // 1. Core fallback baseline
         currentLoggedAuthor = user.displayName || user.email.split('@')[0];
 
         try {
-            // Check if a manual nickname override exists in Firestore
-            const userDoc = await db.collection("users").doc(user.uniqueId).get();
+            // 2. FIXED: Lookup custom nickname override using user.email instead of user.uniqueId
+            const userDoc = await db.collection("users").doc(user.email).get();
             if (userDoc.exists && userDoc.data().nickname) {
                 currentLoggedAuthor = userDoc.data().nickname;
             }

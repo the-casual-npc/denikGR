@@ -35,8 +35,6 @@ async function initAnecdotesEngine() {
                 url: data.url || "",
                 relatedIds: data["Related articles"] || []
             });
-
-            console.log(`Anecdote ID: ${doc.id}, Author: ${data.author}, Type: ${data.type}, URL: ${data.url}`, data["Related articles"]);
         });
 
         // 2. Build DOM structural cards pipeline looping items array sequentially

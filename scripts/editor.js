@@ -207,7 +207,7 @@ if (anecdoteForm) {
 
             // 3. Assemble complete structured document mapping currentLoggedAuthor profile
             const anecdoteDocument = {
-                author: document.getElementById('userMenuBtn').textContent.trim(),
+                author: document.getElementById('userMenuBtn').textContent.replace('▾', '').trim(),
                 date: firebase.firestore.Timestamp.now(),
                 type: detectedType,
                 url: downloadURL,

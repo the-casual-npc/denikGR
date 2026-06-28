@@ -1,6 +1,5 @@
 // auth.js
 const auth = firebase.auth();
-const db = firebase.firestore(); // Make sure db is initialized
 
 // 1. Array of master administrator/editor account emails
 const ADMIN_EMAILS = [

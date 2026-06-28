@@ -4,7 +4,8 @@ const auth = firebase.auth();
 // 1. Array of master administrator/editor account emails
 const ADMIN_EMAILS = [
     "matochakareljr@gmail.com",
-    "casual.npc.guy@gmail.com"
+    "casual.npc.guy@gmail.com",
+    "adam.zahor@icloud.com"
 ];
 
 // Modal DOM Access Selectors

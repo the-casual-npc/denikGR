@@ -205,7 +205,7 @@ if (anecdoteForm) {
                 date: firebase.firestore.Timestamp.now(),
                 type: detectedType,
                 url: downloadURL,
-                relatedIds: Array.from(attachedArticleIds)
+                "Related articles": Array.from(attachedArticleIds)
             };
 
             // 4. Save directly into Firestore database collection node

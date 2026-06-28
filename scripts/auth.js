@@ -1,4 +1,6 @@
+// auth.js
 const auth = firebase.auth();
+const db = firebase.firestore(); // Make sure db is initialized
 
 // 1. Array of master administrator/editor account emails
 const ADMIN_EMAILS = [
@@ -76,7 +78,14 @@ document.getElementById('authForm').addEventListener('submit', function(e) {
         auth.createUserWithEmailAndPassword(email, password)
             .then((userCredential) => {
                 const user = userCredential.user;
-                return user.updateProfile({ displayName: nickname });
+                // Update authentication profile display name
+                return user.updateProfile({ displayName: nickname }).then(() => user);
+            })
+            .then((user) => {
+                // Save nickname to Firestore users collection automatically on registration
+                return db.collection("users").doc(user.uid).set({
+                    nickname: nickname
+                });
             })
             .then(() => {
                 // Success: Smoothly close modal without primitive alerts
@@ -101,6 +110,17 @@ if (googleBtn) {
         clearAuthError();
         auth.signInWithPopup(googleProvider)
             .then((result) => {
+                const user = result.user;
+                // Backfill users collection if Google user logs in for the first time
+                return db.collection("users").doc(user.uid).get().then((doc) => {
+                    if (!doc.exists) {
+                        return db.collection("users").doc(user.uid).set({
+                            nickname: user.displayName || user.email.split('@')[0]
+                        });
+                    }
+                });
+            })
+            .then(() => {
                 // Success: Smoothly close modal without primitive alerts
                 closeAuthModalAndReset();
             })
@@ -108,9 +128,11 @@ if (googleBtn) {
     });
 }
 
-async function fetchUserNicknameOverride(userId) {
+// Fixed function: Uses user.uid to match database entries
+async function fetchUserNicknameOverride(uid) {
+    if (!uid) return null;
     try {
-        const userDoc = await db.collection("users").doc(userId).get();
+        const userDoc = await db.collection("users").doc(uid).get();
         if (userDoc.exists && userDoc.data().nickname) {
             return userDoc.data().nickname;
         }
@@ -122,18 +144,19 @@ async function fetchUserNicknameOverride(userId) {
 
 // Global Session Monitor Tracker Hook (Dynamic Dropdown Generator)
 auth.onAuthStateChanged((user) => {
-    setTimeout(() => {
+    // Added 'async' to this arrow function so it can safely resolve await inside!
+    setTimeout(async () => {
         const authWrapper = document.getElementById('authWrapper');
         if (!authWrapper) return;
         
         if (user) {
-            // Fetch identity payload
-            const displayName = user.displayName || user.email.split('@')[0];
+            // 1. Core fallback baseline
+            let finalNameToShow = user.displayName || user.email.split('@')[0];
 
-            // Attempt to fetch a custom nickname override from Firestore
-            const customNickname = await fetchUserNicknameOverride(user.uniqueId);
+            // 2. Fetch custom nickname override from Firestore using user.uid
+            const customNickname = await fetchUserNicknameOverride(user.uid);
             if (customNickname) {
-                currentLoggedAuthor = customNickname;
+                finalNameToShow = customNickname;
             }
 
             // Check if the authenticated email exists inside our ADMIN_EMAILS array
@@ -142,7 +165,7 @@ auth.onAuthStateChanged((user) => {
             // Generate a feature-rich dropdown layout panel inside the navbar wrapper
             authWrapper.innerHTML = `
                 <button id="userMenuBtn" class="login-trigger-btn" style="border-color: var(--text-color); color: var(--text-color);">
-                    ${displayName} ▾
+                    ${finalNameToShow} ▾
                 </button>
                 <div id="userDropdown" class="user-dropdown-menu">
                     <button class="user-dropdown-item" onclick="alert('Tato funkce ještě není dostupná')">Upravit Profil</button>
@@ -156,7 +179,6 @@ auth.onAuthStateChanged((user) => {
             
             // Explicitly attach action callback hook onto generated log-out button link element
             document.getElementById('logoutBtn').addEventListener('click', () => {
-                // Removed the confirmation dialog block to log out instantly
                 auth.signOut().then(() => {
                     window.location.reload();
                 });

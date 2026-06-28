@@ -15,19 +15,25 @@ if (workspace) {
 }
 
 /* ==========================================================================
-   0. AUTHENTICATION STATE OBSERVER (AUTOMATED AUTHOR CAPTURE)
+   0. AUTHENTICATION STATE OBSERVER (WITH MANUAL NICKNAME LOOKUP)
    ========================================================================== */
-firebase.auth().onAuthStateChanged((user) => {
+firebase.auth().onAuthStateChanged(async (user) => {
     if (user) {
-        // Use Display Name if set, otherwise cleanly grab the prefix of their email address
-        if (user.displayName && user.displayName.trim() !== "") {
-            currentLoggedAuthor = user.displayName;
-        } else if (user.email) {
-            currentLoggedAuthor = user.email.split('@')[0];
+        // Default fallback strategy
+        currentLoggedAuthor = user.displayName || user.email.split('@')[0];
+
+        try {
+            // Check if a manual nickname override exists in Firestore
+            const userDoc = await db.collection("users").doc(user.uniqueId).get();
+            if (userDoc.exists && userDoc.data().nickname) {
+                currentLoggedAuthor = userDoc.data().nickname;
+            }
+        } catch (err) {
+            console.error("Failed to read user nickname override:", err);
         }
-        console.log("Logged author profile captured:", currentLoggedAuthor);
+        
+        console.log("Active author identity locked:", currentLoggedAuthor);
     } else {
-        console.warn("No authenticated session detected. Falling back to default.");
         currentLoggedAuthor = "Anonymní redaktor";
     }
 });

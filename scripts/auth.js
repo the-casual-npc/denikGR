@@ -108,6 +108,18 @@ if (googleBtn) {
     });
 }
 
+async function fetchUserNicknameOverride(userId) {
+    try {
+        const userDoc = await db.collection("users").doc(userId).get();
+        if (userDoc.exists && userDoc.data().nickname) {
+            return userDoc.data().nickname;
+        }
+    } catch (err) {
+        console.error("Failed to read user nickname override:", err);
+    }
+    return null;
+}
+
 // Global Session Monitor Tracker Hook (Dynamic Dropdown Generator)
 auth.onAuthStateChanged((user) => {
     setTimeout(() => {
@@ -118,16 +130,12 @@ auth.onAuthStateChanged((user) => {
             // Fetch identity payload
             const displayName = user.displayName || user.email.split('@')[0];
 
-            try {
-            // Check if a manual nickname override exists in Firestore
-            const userDoc = await db.collection("users").doc(user.uniqueId).get();
-            if (userDoc.exists && userDoc.data().nickname) {
-                displayName = userDoc.data().nickname;
+            // Attempt to fetch a custom nickname override from Firestore
+            const customNickname = await fetchUserNicknameOverride(user.uniqueId);
+            if (customNickname) {
+                currentLoggedAuthor = customNickname;
             }
-            } catch (err) {
-                console.error("Failed to read user nickname override:", err);
-            }
-            
+
             // Check if the authenticated email exists inside our ADMIN_EMAILS array
             const isUserAdmin = user.email && ADMIN_EMAILS.map(e => e.toLowerCase()).includes(user.email.toLowerCase());
             

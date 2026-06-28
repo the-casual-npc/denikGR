@@ -207,7 +207,7 @@ if (anecdoteForm) {
 
             // 3. Assemble complete structured document mapping currentLoggedAuthor profile
             const anecdoteDocument = {
-                author: currentLoggedAuthor,
+                author: document.getElementById('userMenuBtn').textContent.trim(),
                 date: firebase.firestore.Timestamp.now(),
                 type: detectedType,
                 url: downloadURL,
@@ -320,7 +320,6 @@ if (modularArticleForm) {
             const category = document.getElementById('category').value;
             const coverCaptionInput = document.getElementById('coverCaption').value.trim();
             const finalCoverCaption = coverCaptionInput || `Snímek pořízen redaktorem ${currentLoggedAuthor}`;
-
             const coverFileElement = document.getElementById('coverImageFile').files[0];
             const uploadedCoverUrl = await uploadFileAsync(coverFileElement);
 
@@ -364,7 +363,7 @@ if (modularArticleForm) {
 
             const articleDocument = {
                 title: title,
-                author: currentLoggedAuthor, // Automatically tracking active user account string
+                author: document.getElementById('userMenuBtn').textContent.trim(),
                 category: category,
                 coverImage: uploadedCoverUrl,
                 coverCaption: finalCoverCaption,

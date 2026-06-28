@@ -1,6 +1,4 @@
-// auth.js
 const auth = firebase.auth();
-const db = firebase.firestore(); // Added db instance reference access
 
 // 1. Array of master administrator/editor account emails
 const ADMIN_EMAILS = [
@@ -71,21 +69,14 @@ document.getElementById('authForm').addEventListener('submit', function(e) {
     
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
-    const nickname = document.getElementById('authNickname').value.trim();
+    const nickname = document.getElementById('authNickname').value;
     const isRegisterMode = document.getElementById('tabRegister').classList.contains('active');
     
     if (isRegisterMode) {
         auth.createUserWithEmailAndPassword(email, password)
             .then((userCredential) => {
                 const user = userCredential.user;
-                // Update local auth profile display details
-                return user.updateProfile({ displayName: nickname }).then(() => user);
-            })
-            .then((user) => {
-                // AUTOMATED NICKNAME REGISTRATION: Sync identity directly to Firestore matching Method 1
-                return db.collection("users").doc(user.email).set({
-                    nickname: nickname
-                });
+                return user.updateProfile({ displayName: nickname });
             })
             .then(() => {
                 // Success: Smoothly close modal without primitive alerts
@@ -110,17 +101,6 @@ if (googleBtn) {
         clearAuthError();
         auth.signInWithPopup(googleProvider)
             .then((result) => {
-                const user = result.user;
-                // If Google profile name is present, make sure database has an index entry mapped
-                return db.collection("users").doc(user.email).get().then((doc) => {
-                    if (!doc.exists) {
-                        return db.collection("users").doc(user.email).set({
-                            nickname: user.displayName || user.email.split('@')[0]
-                        });
-                    }
-                });
-            })
-            .then(() => {
                 // Success: Smoothly close modal without primitive alerts
                 closeAuthModalAndReset();
             })
@@ -129,53 +109,56 @@ if (googleBtn) {
 }
 
 // Global Session Monitor Tracker Hook (Dynamic Dropdown Generator)
-auth.onAuthStateChanged(async (user) => {
-    const authWrapper = document.getElementById('authWrapper');
-    if (!authWrapper) return;
-    
-    if (user) {
-        // Base identity fallback payload strings
-        let finalDisplayName = user.displayName || user.email.split('@')[0];
+auth.onAuthStateChanged((user) => {
+    setTimeout(() => {
+        const authWrapper = document.getElementById('authWrapper');
+        if (!authWrapper) return;
         
-        try {
-            // ASYNCHRONOUS OVERRIDE LOOKUP: Pull explicit nickname mapping configuration records
+        if (user) {
+            // Fetch identity payload
+            const displayName = user.displayName || user.email.split('@')[0];
+
+            try {
+            // Check if a manual nickname override exists in Firestore
             const userDoc = await db.collection("users").doc(user.uniqueId).get();
             if (userDoc.exists && userDoc.data().nickname) {
-                finalDisplayName = userDoc.data().nickname;
+                displayName = userDoc.data().nickname;
             }
-        } catch (error) {
-            console.warn("Could not query Firestore override mapping dataset:", error);
-        }
-        
-        // Check if the authenticated email exists inside our ADMIN_EMAILS array
-        const isUserAdmin = user.email && ADMIN_EMAILS.map(e => e.toLowerCase()).includes(user.email.toLowerCase());
-        
-        // Generate a feature-rich dropdown layout panel inside the navbar wrapper
-        authWrapper.innerHTML = `
-            <button id="userMenuBtn" class="login-trigger-btn" style="border-color: var(--text-color); color: var(--text-color);">
-                ${finalDisplayName} ▾
-            </button>
-            <div id="userDropdown" class="user-dropdown-menu">
-                <button class="user-dropdown-item" onclick="alert('Tato funkce ještě není dostupná')">Upravit Profil</button>
-                <button class="user-dropdown-item" onclick="alert('Tato funkce ještě není dostupná')">Nastavení</button>
-                
-                ${isUserAdmin ? `<a href="editor.html" class="user-dropdown-item" style="color: var(--link-hover);">Editor</a>` : ''}
-                
-                <button id="logoutBtn" class="user-dropdown-item logout-item">Odhlásit se</button>
-            </div>
-        `;
-        
-        // Explicitly attach action callback hook onto generated log-out button link element
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            auth.signOut().then(() => {
-                window.location.reload();
+            } catch (err) {
+                console.error("Failed to read user nickname override:", err);
+            }
+            
+            // Check if the authenticated email exists inside our ADMIN_EMAILS array
+            const isUserAdmin = user.email && ADMIN_EMAILS.map(e => e.toLowerCase()).includes(user.email.toLowerCase());
+            
+            // Generate a feature-rich dropdown layout panel inside the navbar wrapper
+            authWrapper.innerHTML = `
+                <button id="userMenuBtn" class="login-trigger-btn" style="border-color: var(--text-color); color: var(--text-color);">
+                    ${displayName} ▾
+                </button>
+                <div id="userDropdown" class="user-dropdown-menu">
+                    <button class="user-dropdown-item" onclick="alert('Tato funkce ještě není dostupná')">Upravit Profil</button>
+                    <button class="user-dropdown-item" onclick="alert('Tato funkce ještě není dostupná')">Nastavení</button>
+                    
+                    ${isUserAdmin ? `<a href="editor.html" class="user-dropdown-item" style="color: var(--link-hover);">Editor</a>` : ''}
+                    
+                    <button id="logoutBtn" class="user-dropdown-item logout-item">Odhlásit se</button>
+                </div>
+            `;
+            
+            // Explicitly attach action callback hook onto generated log-out button link element
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                // Removed the confirmation dialog block to log out instantly
+                auth.signOut().then(() => {
+                    window.location.reload();
+                });
             });
-        });
-        
-    } else {
-        // Fallback UI reset to primitive action button triggers if user session vanishes
-        authWrapper.innerHTML = `<button id="openAuthBtn" class="login-trigger-btn">Přihlásit se</button>`;
-    }
+            
+        } else {
+            // Fallback UI reset to primitive action button triggers if user session vanishes
+            authWrapper.innerHTML = `<button id="openAuthBtn" class="login-trigger-btn">Přihlásit se</button>`;
+        }
+    }, 50);
 });
 
 // Clean overlay form structures

@@ -47,6 +47,7 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
+    width: 100%;
 }
 
 header {
@@ -430,4 +431,154 @@ nav a {
 
 nav a:hover {
     color: var(--link-hover);
+}
+
+/* ==========================================================================
+   7. POPUP & ANECDOTE RELATION SELECTORS
+   ========================================================================== */
+.popup-article-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: var(--panel-bg);
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.popup-article-row:hover {
+    border-color: var(--link-hover);
+    transform: translateY(-1px);
+    background: var(--bg-color);
+}
+
+.popup-row-thumb {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #000;
+}
+
+.popup-row-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color);
+    flex: 1;
+}
+
+.popup-row-badge {
+    font-size: 0.7rem;
+    background: var(--border-color);
+    padding: 3px 8px;
+    border-radius: 4px;
+    color: var(--meta-text);
+}
+
+/* Selected block modification inside Workspace */
+.selected-relation-block {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-left: 5px solid var(--link-hover);
+    padding: 12px 20px;
+    margin-bottom: 12px;
+    border-radius: 0 6px 6px 0;
+}
+
+/* ==========================================================================
+   8. INDEPENDENT POPUP OVERLAY FIX
+   ========================================================================== */
+.custom-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7); /* Soft darkened background */
+    backdrop-filter: blur(4px);    /* Optional: blurs the editor behind it beautifully */
+    z-index: 20000 !important;      /* Forces it completely above the editor layout */
+    justify-content: center;
+    align-items: center;
+}
+
+/* ==========================================================================
+   9. SMOOTHING ANIMATIONS (SWITCHER & RELATED ARTICLES)
+   ========================================================================== */
+
+/* Fade-in effect for workspace mode switching */
+@keyframes smoothFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.editor-container {
+    /* Apply animation when element becomes visible */
+    animation: smoothFadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Enhancing the Selected Relation Blocks with entries/exits */
+.selected-relation-block {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-left: 5px solid var(--link-hover);
+    padding: 12px 20px;
+    margin-bottom: 12px;
+    border-radius: 0 6px 6px 0;
+    
+    /* Smooth transitions for adding/removing states */
+    opacity: 0;
+    transform: scale(0.95);
+    animation: smoothBlockEntry 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    transition: opacity 0.2s ease, transform 0.2s ease, max-height 0.2s ease, margin 0.2s ease, padding 0.2s ease;
+    max-height: 100px; /* High enough to contain content */
+    overflow: hidden;
+}
+
+@keyframes smoothBlockEntry {
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Class applied programmatically right before removal */
+.selected-relation-block.removing {
+    opacity: 0 !important;
+    transform: scale(0.9) !important;
+    max-height: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    border-top: none !important;
+    border-bottom: none !important;
+}
+
+/* Bonus: Smooth underline hover effect for mode buttons */
+.action-node-btn {
+    transition: border-color 0.2s ease, font-weight 0.2s ease;
+}
+
+/* ==========================================================================
+   10. UNIFIED WORKSPACE DIMENSIONS
+   ========================================================================== */
+#articleWorkspaceContainer,
+#anecdoteWorkspaceContainer {
+    width: 100%;
+    max-width: 750px; /* Forces both workspaces to share the exact same bounds */
+    box-sizing: border-box;
+    margin: 40px auto; /* Ensures vertical alignment stays perfectly identical */
 }

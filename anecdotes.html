@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor | Deník.GR</title>
+    <title>Anekdoty | Deník.GR</title>
     <link rel="stylesheet" href="styles/auth.css">
-    <link rel="stylesheet" href="styles/editor.css">
+    <link rel="stylesheet" href="styles/anecdotes.css">
 </head>
 <body>
 
@@ -23,6 +23,7 @@
                     <li><a href="category.html?name=Diskuze">Diskuze</a></li>
                 </ul>
                 <div class="nav-right">
+                    <a href="anecdotes.html" class="nav-extra-link">Anekdoty</a>
                     <a href="#" class="nav-extra-link" onclick="alert('Tato funkce ještě není dostupná.')">Mapa</a>
                     <a href="#" class="nav-extra-link" onclick="alert('Tato funkce ještě není dostupná.')">Osobnosti</a>
                     
@@ -36,7 +37,7 @@
         <div id="authOverlay" class="auth-overlay">
             <div class="auth-modal">
                 <button id="closeAuthBtn" class="close-modal-btn" aria-label="Zavřít">&times;</button>
-                
+
                 <div class="auth-tabs">
                     <button class="tab-btn active" id="tabLogin" onclick="switchAuthTab('login')">Přihlášení</button>
                     <button class="tab-btn" id="tabRegister" onclick="switchAuthTab('register')">Registrace</button>
@@ -63,7 +64,7 @@
                         <label for="authNickname">Přezdívka (Minecraft jméno)</label>
                         <input type="text" id="authNickname" placeholder="skibidak_123">
                     </div>
-                    
+
                     <div class="auth-form-group">
                         <label for="authEmail">E-mailová adresa</label>
                         <input type="email" id="authEmail" required placeholder="skibidak123@gmail.com">
@@ -80,117 +81,16 @@
         </div>
     </header>
 
-    <main class="container">
-    <!-- Mode Switcher Tabs -->
-    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 30px; margin-bottom: -15px;">
-        <button id="modeBtnArticle" class="action-node-btn" style="border-bottom: 3px solid var(--text-color); font-weight: bold;" onclick="switchEditorMode('article')">📝 Nový Článek</button>
-        <button id="modeBtnAnecdote" class="action-node-btn" style="font-weight: bold;" onclick="switchEditorMode('anecdote')">📷 Nová Anekdota</button>
-    </div>
-
-    <!-- 1. ARTICLE COMPILER WORKSPACE (EXISTING) -->
-    <div class="editor-container" id="articleWorkspaceContainer">
-        <h2>Kompilátor Článků</h2>
-        <p class="editor-sub-notice">Editor pro přidání nového článku. Články mohou psát pouze vybraní uživatelé.</p>
+    <main class="container" id="anecdotesMainWrapper">
+        <h1 class="anecdotes-title-header" id="anecdotesHeaderName">Anekdoty</h1>
         
-        <form id="modularArticleForm">
-            <div class="form-group">
-                <label>Název Článku</label>
-                <input type="text" id="title" placeholder="Např. Obchodní dům v plamenech kvůli creeperovi...">
+        <div class="anecdotes-feed-grid" id="anecdotesFeedContainer">
+            <div class="anecdotes-loader-wrap">
+                <div class="spinner"></div>
+                <div>Načítám anekdoty...</div>
             </div>
-
-            <div class="form-group">
-                <label>Kategorie</label>
-                <div class="category-select-wrapper">
-                    <select id="category">
-                        <option value="Aktuality">Aktuality</option>
-                        <option value="Obchody">Obchody</option>
-                        <option value="Doprava">Doprava</option>
-                        <option value="Události">Události</option>
-                        <option value="Diskuze">Diskuze</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Vybrat Hlavní Náhledový Obrázek</label>
-                <input type="file" id="coverImageFile" accept="image/*" class="file-upload-input">
-            </div>
-
-            <div class="form-group">
-                <label>Popisek náhledového obrázku</label>
-                <input type="text" id="coverCaption" placeholder="Např. Pohled na zničenou bránu obchodu z dnešního rána">
-            </div>
-
-            <h3 class="modules-workspace-header">Obsahové Moduly Článku</h3>
-            <div class="blocks-workspace" id="blocksWorkspace"></div>
-
-            <div class="polished-control-panel">
-                <div class="panel-title">Vložit nový element na konec článku</div>
-                <div class="button-action-group">
-                    <button type="button" class="action-node-btn type-p" onclick="createBlockNode('paragraph')">
-                        <span>📝</span> Odstavec textu
-                    </button>
-                    <button type="button" class="action-node-btn type-img" onclick="createBlockNode('image')">
-                        <span>📷</span> Obrázek z terénu
-                    </button>
-                    <button type="button" class="action-node-btn type-quote" onclick="createBlockNode('blockquote')">
-                        <span>💬</span> Výpověď / Citace
-                    </button>
-                </div>
-            </div>
-
-            <button type="submit" class="submit-btn">Zveřejnit článek</button>
-        </form>
-    </div>
-
-    <!-- 2. ANECDOTE COMPILER WORKSPACE (NEW) -->
-    <div class="editor-container" id="anecdoteWorkspaceContainer" style="display: none;">
-        <h2>Kompilátor Anekdot</h2>
-        <p class="editor-sub-notice">Přidejte momentku nebo krátké video přímo z herního světa spojené se články.</p>
-        
-        <form id="anecdoteForm">
-            <div class="form-group">
-                <label id="anecdoteFileLabel" for="anecdoteFile">Vybrat Multimédia (Obrázek nebo Video)</label>
-                    <!-- Accept both image and video files simultaneously -->
-                    <input type="file" id="anecdoteFile" accept="image/*,video/*" required>
-            </div>
-
-            <h3 class="modules-workspace-header">Propojení se Články</h3>
-            <div class="blocks-workspace" id="selectedArticlesWorkspace">
-                <!-- Selected items render dynamically here -->
-            </div>
-
-            <div class="polished-control-panel">
-                <div class="panel-title">Propojit s existujícími zprávami</div>
-                <div class="button-action-group">
-                    <button type="button" class="action-node-btn" onclick="openArticlesPopup()">
-                        <span>🔗</span> Přidat související článek
-                    </button>
-                </div>
-            </div>
-
-            <button type="submit" class="submit-btn" id="anecdoteSubmitBtn">Zveřejnit Anekdotu</button>
-        </form>
-    </div>
-</main>
-
-<!-- RELATED ARTICLES POPUP DIALOGUE MODAL -->
-<div id="articlesPopupModal" class="custom-popup-overlay" style="display: none;">
-    <div class="auth-modal" style="max-width: 650px; width: 90%; max-height: 85vh; display: flex; flex-direction: column;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-color); padding-bottom:10px; margin-bottom:15px;">
-            <h3 style="margin:0; text-transform:uppercase; font-size:1.1rem;">Výběr Souvisejících Článků</h3>
-            <button type="button" class="close-modal-btn" onclick="closeArticlesPopup()" style="position:static; line-height:1;">&times;</button>
         </div>
-        
-        <!-- Search bar/Notice -->
-        <p style="font-size:0.85rem; color:var(--meta-text); margin-bottom:15px;">Kliknutím vyberte článek, který chcete připojit k vytvářené anekdotě.</p>
-        
-        <!-- Popup Grid List Container -->
-        <div id="popupArticlesGrid" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:10px; padding-right:5px;">
-            <!-- Render dynamic rows asynchronously -->
-            <div style="text-align:center; padding:30px; color:var(--meta-text);">Načítám databázi článků...</div>
-        </div>
-    </div>
-</div>
+    </main>
 
     <footer>
         <div class="container">
@@ -231,7 +131,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDlID9gBLmU_gc7Of2BoXCGp7q4OYkYdZU",
@@ -244,9 +143,8 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const storage = firebase.storage();
     </script>
-    <script src="scripts/editor.js"></script>
+    <script src="scripts/anecdotes.js"></script>
     <script src="scripts/auth.js"></script>
 </body>
 </html>

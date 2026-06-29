@@ -37,7 +37,7 @@ async function initAnecdotesEngine() {
             });
         });
 
-        anecdotesCollection.sort(() => 0.5 - Math.random()); // Randomize order for variety
+        anecdotesCollection.sort((a, b) => b.id.localeCompare(a.id)); // Sort descending by ID
 
         // 2. Build DOM structural cards pipeline looping items array sequentially
         for (let anecdoteItem of anecdotesCollection) {

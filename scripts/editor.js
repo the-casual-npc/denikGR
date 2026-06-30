@@ -363,7 +363,7 @@ if (modularArticleForm) {
 
             const articleDocument = {
                 title: title,
-                author: document.getElementById('userMenuBtn').textContent.trim(),
+                author: document.getElementById('userMenuBtn').textContent.replace('▾', '').trim(),
                 category: category,
                 coverImage: uploadedCoverUrl,
                 coverCaption: finalCoverCaption,

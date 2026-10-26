@@ -96,7 +96,7 @@
         <form id="modularArticleForm">
             <div class="form-group">
                 <label>Název Článku</label>
-                <input type="text" id="title" placeholder="Např. Obchodní dům v plamenech kvůli creeperovi...">
+                <input type="text" id="title" placeholder="Např. Ve starém městě se stále nic neděje...">
             </div>
 
             <div class="form-group">
@@ -118,7 +118,7 @@
 
             <div class="form-group">
                 <label>Popisek náhledového obrázku</label>
-                <input type="text" id="coverCaption" placeholder="Např. Pohled na zničenou bránu obchodu z dnešního rána">
+                <input type="text" id="coverCaption" placeholder="Např. Pohled pozůstatek plísňového komplexu...">
             </div>
 
             <h3 class="modules-workspace-header">Obsahové Moduly Článku</h3>
@@ -135,6 +135,20 @@
                     </button>
                     <button type="button" class="action-node-btn type-quote" onclick="createBlockNode('blockquote')">
                         <span>💬</span> Výpověď / Citace
+                    </button>
+                </div>
+            </div>
+
+            <h3 class="modules-workspace-header">Související Anekdoty</h3>
+            <div class="blocks-workspace" id="selectedAnecdotesWorkspace">
+                <!-- Selected anecdotes render dynamically here -->
+            </div>
+
+            <div class="polished-control-panel">
+                <div class="panel-title">Propojit s existujícími anekdotami</div>
+                <div class="button-action-group">
+                    <button type="button" class="action-node-btn" onclick="openAnecdotesPopup()">
+                        <span>🔗</span> Přidat související anekdotu
                     </button>
                 </div>
             </div>
@@ -189,6 +203,22 @@
         <div id="popupArticlesGrid" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:10px; padding-right:5px;">
             <!-- Render dynamic rows asynchronously -->
             <div style="text-align:center; padding:30px; color:var(--meta-text);">Načítám databázi článků...</div>
+        </div>
+    </div>
+</div>
+
+<!-- RELATED ANECDOTES POPUP DIALOGUE MODAL -->
+<div id="anecdotesPopupModal" class="custom-popup-overlay" style="display: none;">
+    <div class="auth-modal" style="max-width: 650px; width: 90%; max-height: 85vh; display: flex; flex-direction: column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-color); padding-bottom:10px; margin-bottom:15px;">
+            <h3 style="margin:0; text-transform:uppercase; font-size:1.1rem;">Výběr Souvisejících Anekdot</h3>
+            <button type="button" class="close-modal-btn" onclick="closeAnecdotesPopup()" style="position:static; line-height:1;">&times;</button>
+        </div>
+
+        <p style="font-size:0.85rem; color:var(--meta-text); margin-bottom:15px;">Kliknutím vyberte anekdotu, kterou chcete připojit k vytvářenému článku.</p>
+
+        <div id="popupAnecdotesGrid" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:10px; padding-right:5px;">
+            <div style="text-align:center; padding:30px; color:var(--meta-text);">Načítám databázi anekdot...</div>
         </div>
     </div>
 </div>

@@ -32,8 +32,8 @@
     box-sizing: border-box;
 }
 
-html, body {
-    height: 100%;
+body {
+    min-height: 100vh;
 }
 
 body {
@@ -302,8 +302,7 @@ aside {
 @media (min-width: 900px) {
     aside {
         position: sticky;
-        top: 50%; 
-        transform: translateY(-50%); 
+        top: var(--aside-top, 190px);
         z-index: 10;
     }
 }
@@ -447,4 +446,141 @@ footer {
 .ad-mute-toggle:hover {
     background: rgba(0, 0, 0, 0.9);
     transform: scale(1.02);
+}
+
+/* ==========================================================================
+   9. RELATED ANECDOTES WIDGET & LIGHTBOX
+   ========================================================================== */
+.anecdote-widget-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.carousel-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--meta-text);
+}
+
+.carousel-btn {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.carousel-btn:hover {
+    background: var(--border-color);
+}
+
+.mini-anecdote-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 78px;
+    padding: 8px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.mini-anecdote-card:hover {
+    border-color: var(--link-hover);
+}
+
+.mini-anecdote-card .mini-thumb {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 3px;
+    background: #000;
+    flex-shrink: 0;
+}
+
+.mini-details {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.mini-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-color);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.mini-meta {
+    font-size: 0.75rem;
+    color: var(--meta-text);
+}
+
+/* Lightbox (opens the anecdote's image/video fullscreen) */
+.lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.lightbox-overlay.active {
+    pointer-events: auto;
+    opacity: 1;
+}
+
+.lightbox-content {
+    max-width: 90vw;
+    max-height: 85vh;
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lightbox-overlay.active .lightbox-content {
+    transform: scale(1);
+}
+
+.lightbox-content img,
+.lightbox-content video {
+    width: auto;
+    height: auto;
+    max-width: 90vw;
+    max-height: 85vh;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: #fff;
+    font-size: 2.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
 }

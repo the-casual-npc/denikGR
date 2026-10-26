@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="cs">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -116,14 +116,26 @@
                 </main>
 
                 <aside>
-                    <div class="widget">
-                        <h4 class="widget-title">Další články</h4>
-                        <ul class="related-list" id="randomArticlesContainer"></ul>
+                    <div class="widget" id="relatedAnecdotesWidget" hidden>
+                        <h4 class="widget-title anecdote-widget-title">
+                            <span>Související anekdoty</span>
+                            <span class="carousel-controls" id="anecdoteControls" style="display:none;">
+                                <button type="button" class="carousel-btn" id="anecdotePrevBtn" aria-label="Předchozí">◀</button>
+                                <span id="anecdoteCounter">1/1</span>
+                                <button type="button" class="carousel-btn" id="anecdoteNextBtn" aria-label="Další">▶</button>
+                            </span>
+                        </h4>
+                        <div id="anecdoteViewport"></div>
                     </div>
 
                     <div class="widget">
                         <h4 class="widget-title">Sponzorováno</h4>
                         <div id="dynamicAdContainer"></div>
+                    </div>
+
+                    <div class="widget">
+                        <h4 class="widget-title">Další články</h4>
+                        <ul class="related-list" id="randomArticlesContainer"></ul>
                     </div>
                 </aside>
 

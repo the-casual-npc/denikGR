@@ -6,6 +6,9 @@ let blockCounter = 0;
 // Track selected article IDs for the anecdote feature
 let attachedArticleIds = new Set(); 
 
+// Track selected anecdote IDs for the article feature
+let attachedAnecdoteIds = new Set();
+
 // Global variable to lock down the active author profile dynamically
 let currentLoggedAuthor = "Anonymní redaktor";
 
@@ -145,6 +148,135 @@ window.removeArticleRelation = function(id) {
     attachedArticleIds.delete(id);
     const targetBlock = document.getElementById(`rel_block_${id}`);
     
+    if (targetBlock) {
+        targetBlock.classList.add('removing');
+        setTimeout(() => {
+            targetBlock.remove();
+        }, 200);
+    }
+};
+
+/* ==========================================================================
+   2B. ANECDOTES DIALOG POPUP SELECTION ENGINE (for the article form)
+   ========================================================================== */
+
+// Builds a small preview element: <img> for images, a muted first-frame <video> for videos
+function createAnecdoteThumb(anecdote, className, inlineStyle) {
+    let thumb;
+    if (anecdote.type === 'video') {
+        thumb = document.createElement('video');
+        thumb.src = anecdote.url + '#t=0.1';
+        thumb.muted = true;
+        thumb.preload = 'metadata';
+        thumb.playsInline = true;
+    } else {
+        thumb = document.createElement('img');
+        thumb.src = anecdote.url;
+        thumb.alt = "Náhled";
+    }
+    if (className) thumb.className = className;
+    if (inlineStyle) thumb.style.cssText = inlineStyle;
+    return thumb;
+}
+
+window.openAnecdotesPopup = async function() {
+    const popup = document.getElementById('anecdotesPopupModal');
+    const grid = document.getElementById('popupAnecdotesGrid');
+    popup.style.display = 'flex';
+    grid.innerHTML = `<div style="text-align:center; padding:30px; color:var(--meta-text);">Načítám anekdoty z databáze...</div>`;
+
+    try {
+        const snapshot = await db.collection("anecdotes").get();
+        if (snapshot.empty) {
+            grid.innerHTML = `<div style="text-align:center; padding:20px;">Nenalezeny žádné anekdoty.</div>`;
+            return;
+        }
+
+        const anecdotes = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (attachedAnecdoteIds.has(doc.id)) return;
+            anecdotes.push({
+                id: doc.id,
+                author: data.author || "Neznámý autor",
+                type: data.type || "image",
+                url: data.url || "",
+                date: data.date ? data.date.toDate().toLocaleDateString('cs-CZ') : ""
+            });
+        });
+
+        // Newest first, same as the anecdotes page
+        anecdotes.sort((a, b) => b.id.localeCompare(a.id));
+
+        grid.innerHTML = "";
+        anecdotes.forEach(anecdote => {
+            const row = document.createElement('div');
+            row.className = 'popup-article-row';
+
+            const thumb = createAnecdoteThumb(anecdote, 'popup-row-thumb');
+
+            const title = document.createElement('div');
+            title.className = 'popup-row-title';
+            title.textContent = `Anekdota od ${anecdote.author}` + (anecdote.date ? ` • ${anecdote.date}` : '');
+
+            const badge = document.createElement('div');
+            badge.className = 'popup-row-badge';
+            badge.textContent = `ID: ${anecdote.id}`;
+
+            row.append(thumb, title, badge);
+            row.onclick = () => selectAnecdoteRelation(anecdote);
+            grid.appendChild(row);
+        });
+
+        if (anecdotes.length === 0) {
+            grid.innerHTML = `<div style="text-align:center; padding:20px; color:var(--meta-text);">Všechny dostupné anekdoty již byly připojeny.</div>`;
+        }
+
+    } catch (err) {
+        console.error("Anecdotes popup build error:", err);
+        grid.innerHTML = `<div style="text-align:center; padding:20px; color:red;">Chyba při komunikaci s Firestore.</div>`;
+    }
+};
+
+window.closeAnecdotesPopup = function() {
+    document.getElementById('anecdotesPopupModal').style.display = 'none';
+};
+
+function selectAnecdoteRelation(anecdote) {
+    attachedAnecdoteIds.add(anecdote.id);
+    closeAnecdotesPopup();
+
+    const relationWorkspace = document.getElementById('selectedAnecdotesWorkspace');
+    const block = document.createElement('div');
+    block.className = 'selected-relation-block';
+    // Separate prefix from the article relations so IDs never collide in the DOM
+    block.id = `rel_anecdote_block_${anecdote.id}`;
+
+    const thumb = createAnecdoteThumb(anecdote, null, 'width:40px; height:40px; object-fit:cover; border-radius:3px;');
+
+    const title = document.createElement('div');
+    title.style.cssText = 'flex:1; font-size:0.85rem; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+    title.textContent = `Anekdota od ${anecdote.author}`;
+
+    const idLabel = document.createElement('div');
+    idLabel.style.cssText = 'font-size:0.75rem; color:var(--meta-text); margin-right:10px;';
+    idLabel.textContent = `ID: ${anecdote.id}`;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'remove-block-btn';
+    removeBtn.style.cssText = 'background:none; color:#ff4d4d; border:1px solid #ffccd0; padding:4px 10px; font-size:0.7rem; cursor:pointer; border-radius:4px;';
+    removeBtn.textContent = 'Odstranit';
+    removeBtn.addEventListener('click', () => removeAnecdoteRelation(anecdote.id));
+
+    block.append(thumb, title, idLabel, removeBtn);
+    relationWorkspace.appendChild(block);
+}
+
+window.removeAnecdoteRelation = function(id) {
+    attachedAnecdoteIds.delete(id);
+    const targetBlock = document.getElementById(`rel_anecdote_block_${id}`);
+
     if (targetBlock) {
         targetBlock.classList.add('removing');
         setTimeout(() => {
@@ -369,6 +501,7 @@ if (modularArticleForm) {
                 coverCaption: finalCoverCaption,
                 date: firebase.firestore.Timestamp.now(),
                 blocks: blocksPayloadArray,
+                "Related anecdotes": Array.from(attachedAnecdoteIds)
             };
 
             await db.collection("articles").doc(nextIdString).set(articleDocument);

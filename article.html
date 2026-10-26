@@ -6,6 +6,7 @@
     <title>Článek | Deník.GR</title>
     <link rel="stylesheet" href="styles/auth.css">
     <link rel="stylesheet" href="styles/article.css">
+    <link rel="stylesheet" href="styles/reactions.css">
 </head>
 <body>
 
@@ -89,8 +90,11 @@
         </div>
 
         <div class="container" id="articleWorkspace">
-            <div class="breadcrumbs">
-                <a href="index.html">Deník.GR</a> &gt; <a href="#" class="categorySwap">Category</a>
+            <div class="breadcrumb-row">
+                <div class="breadcrumbs">
+                    <a href="index.html">Deník.GR</a> &gt; <a href="#" class="categorySwap">Category</a>
+                </div>
+                <div id="articleReactionChips"></div>
             </div>
 
             <div class="article-grid">
@@ -112,6 +116,7 @@
                         </div>
 
                         <div class="content"></div>
+                        <section class="comments-section" id="commentsSection"></section>
                     </article>
                 </main>
 
@@ -196,7 +201,9 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
     </script>
+
     <script src="scripts/ads.js"></script>
+    <script src="scripts/reactions.js"></script>
     <script src="scripts/article.js"></script>
     <script src="scripts/auth.js"></script>
 </body>

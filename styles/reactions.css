@@ -1,0 +1,355 @@
+/* ==========================================================================
+   REACTIONS & COMMENTS (shared by article.html and anecdotes.html)
+   ========================================================================== */
+
+/* ---- Article page: breadcrumbs on the left, reaction counts on the right ---- */
+.breadcrumb-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.breadcrumb-row .breadcrumbs {
+    margin-top: 0;
+}
+
+/* ---- Reaction bar (chips) ---- */
+.reaction-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.reaction-host {
+    margin-bottom: 12px; /* anecdote cards */
+}
+
+.reaction-chip,
+.reaction-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.reaction-chip:hover,
+.reaction-add-btn:hover {
+    border-color: var(--link-hover);
+}
+
+.reaction-chip.mine {
+    border-color: var(--link-hover);
+    background: rgba(0, 102, 204, 0.1);
+}
+
+[data-theme="dark"] .reaction-chip.mine {
+    background: rgba(77, 166, 255, 0.15);
+}
+
+.reaction-chip-count {
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.reaction-add-btn {
+    color: var(--meta-text);
+    border-style: dashed;
+}
+
+/* ---- Picker popup (attached to <body>) ---- */
+.reaction-popover {
+    position: fixed;
+    z-index: 10050;
+    display: flex;
+    gap: 4px;
+    padding: 6px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    animation: reactionPop 0.15s ease;
+}
+
+@keyframes reactionPop {
+    from { opacity: 0; transform: translateY(-4px) scale(0.96); }
+    to   { opacity: 1; transform: none; }
+}
+
+.reaction-popover-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 1.35rem;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.12s ease, background-color 0.12s ease;
+}
+
+.reaction-popover-btn:hover {
+    background: var(--panel-bg);
+    transform: scale(1.18);
+}
+
+.reaction-popover-btn.mine {
+    border-color: var(--link-hover);
+    background: rgba(0, 102, 204, 0.12);
+}
+
+/* ---- Comments section ---- */
+.comments-section {
+    margin-top: 45px;
+    padding-top: 25px;
+    border-top: 1px solid var(--border-color);
+}
+
+.comments-title {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 1.3rem;
+    color: var(--text-color);
+    margin-bottom: 20px;
+}
+
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 30px;
+}
+
+.comment-item {
+    display: flex;
+    gap: 14px;
+}
+
+.comment-reaction {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+}
+
+.comment-item.mine .comment-reaction {
+    border-color: var(--link-hover);
+}
+
+.comment-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.comment-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.comment-author {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+.comment-date {
+    font-size: 0.75rem;
+    color: var(--meta-text);
+}
+
+.comment-text {
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--text-color);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.comment-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.comment-action-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--meta-text);
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.comment-action-btn:hover { color: var(--link-hover); }
+.comment-action-btn.delete:hover { color: #e04a4a; }
+
+/* ---- Composer ---- */
+.comment-composer {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 20px;
+}
+
+.composer-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--meta-text);
+    margin-bottom: 12px;
+}
+
+.reaction-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.reaction-option {
+    position: relative;
+    cursor: pointer;
+}
+
+.reaction-option input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.reaction-option span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0.55;
+    transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.reaction-option:hover span { opacity: 0.85; }
+
+.reaction-option input:checked + span {
+    opacity: 1;
+    background: var(--text-color);
+    color: var(--bg-color);
+    border-color: var(--text-color);
+}
+
+.reaction-option input:focus-visible + span {
+    outline: 3px solid rgba(128, 128, 128, 0.35);
+    outline-offset: 2px;
+}
+
+.composer-text {
+    display: block;
+    width: 100%;
+    min-height: 90px;
+    padding: 12px;
+    resize: vertical;
+    background: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.composer-text:focus {
+    border-color: var(--text-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.15);
+}
+
+.composer-error {
+    color: #e04a4a;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 8px;
+}
+
+.composer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.composer-submit {
+    background: var(--text-color);
+    color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    padding: 10px 22px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.composer-submit:hover { opacity: 0.9; }
+.composer-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.composer-delete {
+    background: none;
+    color: #ff4d4d;
+    border: 1px solid #ffccd0;
+    padding: 10px 18px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.composer-delete:hover {
+    background: #ff4d4d;
+    color: #fff;
+    border-color: #ff4d4d;
+}
+
+.composer-login {
+    text-align: center;
+    color: var(--meta-text);
+    font-size: 0.95rem;
+}
+
+.composer-login p {
+    margin-bottom: 14px;
+}

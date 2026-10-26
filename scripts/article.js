@@ -15,6 +15,12 @@ db.collection("articles").doc(articleId).get()
             fetchRandomSuggestions(articleId);
             loadRelatedAnecdotes(doc.data()).catch(err => console.warn("Related anecdotes error:", err));
 
+            // Reactions (top bar) + comments (bottom of the article)
+            const reactions = createReactionController('articles', articleId);
+            renderReactionBar(document.getElementById('articleReactionChips'), reactions);
+            renderCommentsSection(document.getElementById('commentsSection'), reactions);
+            reactions.load();
+
             // Turn off loading element and display the completed grid layout workspace
             document.getElementById('articleLoadingState').style.display = 'none';
             document.getElementById('articleWorkspace').style.display = 'block';

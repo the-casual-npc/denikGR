@@ -70,7 +70,9 @@ function buildAnecdoteCardNode(item) {
         </div>
         <div class="card-content">
             <div class="meta">Zveřejnil: <strong>${item.author}</strong> • ${item.date}</div>
-            
+            <div class="reaction-host"></div>
+            <div class="related-articles-section">
+
             <div class="related-articles-section">
                 <div class="related-title">
                     <span>Související články</span>
@@ -86,6 +88,11 @@ function buildAnecdoteCardNode(item) {
             </div>
         </div>
     `;
+
+    // Reactions (anecdotes support reactions only, no comments)
+    const reactions = createReactionController('anecdotes', item.id);
+    renderReactionBar(card.querySelector('.reaction-host'), reactions, { alwaysShowAdd: true });
+    reactions.load();
 
     // Process article lookups asynchronously by passing elements directly
     if (item.relatedIds && item.relatedIds.length > 0) {

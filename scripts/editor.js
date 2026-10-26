@@ -808,8 +808,20 @@ async function deleteEntry(kind, id, label, data) {
     const noun = kind === 'article' ? 'článek' : 'anekdotu';
     if (!confirm(`Opravdu chcete smazat ${noun} „${label}“?\nTuto akci nelze vrátit zpět.`)) return;
 
+        const collectionName = kind === 'article' ? 'articles' : 'anecdotes';
+
     try {
-        await db.collection(kind === 'article' ? 'articles' : 'anecdotes').doc(id).delete();
+        const postRef = db.collection(collectionName).doc(id);
+
+        // Remove the post's reactions/comments first (the rules allow the post owner to do this)
+        const reactionsSnap = await postRef.collection('reactions').get();
+        if (!reactionsSnap.empty) {
+            const batch = db.batch();
+            reactionsSnap.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+        }
+
+        await postRef.delete();
     } catch (err) {
         console.error("Delete failed:", err);
         alert(err.code === 'permission-denied'
@@ -817,7 +829,7 @@ async function deleteEntry(kind, id, label, data) {
             : "Smazání se nezdařilo.");
         return;
     }
-
+    
     // The Firestore document is gone; now clean up its files (best effort)
     await deleteStorageFiles(kind === 'article' ? collectArticleMediaUrls(data) : [data.url]);
     loadManagerLists();

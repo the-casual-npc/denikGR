@@ -86,11 +86,12 @@
     <div style="display: flex; justify-content: center; gap: 10px; margin-top: 30px; margin-bottom: -15px;">
         <button id="modeBtnArticle" class="action-node-btn" style="border-bottom: 3px solid var(--text-color); font-weight: bold;" onclick="switchEditorMode('article')">📝 Nový Článek</button>
         <button id="modeBtnAnecdote" class="action-node-btn" style="font-weight: bold;" onclick="switchEditorMode('anecdote')">📷 Nová Anekdota</button>
+        <button id="modeBtnManage" class="action-node-btn" style="font-weight: bold;" onclick="switchEditorMode('manage')">🗂️ Moje příspěvky</button>
     </div>
 
     <!-- 1. ARTICLE COMPILER WORKSPACE (EXISTING) -->
     <div class="editor-container" id="articleWorkspaceContainer">
-        <h2>Kompilátor Článků</h2>
+        <h2 id="articleHeading">Kompilátor Článků</h2>
         <p class="editor-sub-notice">Editor pro přidání nového článku. Články mohou psát pouze vybraní uživatelé.</p>
         
         <form id="modularArticleForm">
@@ -100,25 +101,40 @@
             </div>
 
             <div class="form-group">
-                <label>Kategorie</label>
-                <div class="category-select-wrapper">
-                    <select id="category">
-                        <option value="Aktuality">Aktuality</option>
-                        <option value="Obchody">Obchody</option>
-                        <option value="Doprava">Doprava</option>
-                        <option value="Události">Události</option>
-                        <option value="Diskuze">Diskuze</option>
-                    </select>
+                <label id="categoryLabel">Kategorie</label>
+                <div class="category-radio-group" role="radiogroup" aria-labelledby="categoryLabel">
+                    <label class="category-pill">
+                        <input type="radio" name="category" value="Aktuality" checked>
+                        <span>Aktuality</span>
+                    </label>
+                    <label class="category-pill">
+                        <input type="radio" name="category" value="Obchody">
+                        <span>Obchody</span>
+                    </label>
+                    <label class="category-pill">
+                        <input type="radio" name="category" value="Doprava">
+                        <span>Doprava</span>
+                    </label>
+                    <label class="category-pill">
+                        <input type="radio" name="category" value="Události">
+                        <span>Události</span>
+                    </label>
+                    <label class="category-pill">
+                        <input type="radio" name="category" value="Diskuze">
+                        <span>Diskuze</span>
+                    </label>
                 </div>
             </div>
+
             <div class="form-group">
                 <label>Vybrat Hlavní Náhledový Obrázek</label>
                 <input type="file" id="coverImageFile" accept="image/*" class="file-upload-input">
+                <div id="coverCurrentPreview" class="current-media-note" style="display:none;"></div>
             </div>
 
             <div class="form-group">
                 <label>Popisek náhledového obrázku</label>
-                <input type="text" id="coverCaption" placeholder="Např. Pohled pozůstatek plísňového komplexu...">
+                <input type="text" id="coverCaption" placeholder="Např. Pohled na pozůstatek plísňového komplexu...">
             </div>
 
             <h3 class="modules-workspace-header">Obsahové Moduly Článku</h3>
@@ -153,23 +169,25 @@
                 </div>
             </div>
 
-            <button type="submit" class="submit-btn">Zveřejnit článek</button>
+            <button type="button" class="action-node-btn" id="articleCancelEditBtn" style="display:none; margin: 0 auto 15px;" onclick="cancelEdit('article')">✖ Zrušit úpravy</button>
+<button type="submit" class="submit-btn" id="articleSubmitBtn">Zveřejnit článek</button>
         </form>
     </div>
 
     <!-- 2. ANECDOTE COMPILER WORKSPACE (NEW) -->
     <div class="editor-container" id="anecdoteWorkspaceContainer" style="display: none;">
-        <h2>Kompilátor Anekdot</h2>
-        <p class="editor-sub-notice">Přidejte momentku nebo krátké video přímo z herního světa spojené se články.</p>
+        <h2 id="anecdoteHeading">Kompilátor Anekdot</h2>
+        <p class="editor-sub-notice">Jestli nejsi Karel, rovnou odejdi. Všichni víme, že tak vtipný/á jako on nikdy nebudeš.</p>
         
         <form id="anecdoteForm">
             <div class="form-group">
-                <label id="anecdoteFileLabel" for="anecdoteFile">Vybrat Multimédia (Obrázek nebo Video)</label>
+                <label id="anecdoteFileLabel" for="anecdoteFile">Přidat obrázek/video</label>
                     <!-- Accept both image and video files simultaneously -->
                     <input type="file" id="anecdoteFile" accept="image/*,video/*" required>
+                    <div id="anecdoteCurrentPreview" class="current-media-note" style="display:none;"></div>
             </div>
 
-            <h3 class="modules-workspace-header">Propojení se Články</h3>
+            <h3 class="modules-workspace-header">Související články</h3>
             <div class="blocks-workspace" id="selectedArticlesWorkspace">
                 <!-- Selected items render dynamically here -->
             </div>
@@ -183,8 +201,26 @@
                 </div>
             </div>
 
+            <button type="button" class="action-node-btn" id="anecdoteCancelEditBtn" style="display:none; margin: 0 auto 15px;" onclick="cancelEdit('anecdote')">✖ Zrušit úpravy</button>
             <button type="submit" class="submit-btn" id="anecdoteSubmitBtn">Zveřejnit Anekdotu</button>
         </form>
+    </div>
+
+    <!-- 3. MANAGER WORKSPACE -->
+    <div class="editor-container" id="manageWorkspaceContainer" style="display: none;">
+        <h2>Moje příspěvky</h2>
+        <p class="editor-sub-notice">Zde můžete upravit nebo smazat články a anekdoty, které jste zveřejnili.</p>
+
+        <div class="manage-grid">
+            <section>
+                <h3 class="manage-column-title">Články</h3>
+                <div class="manage-list" id="manageArticlesList"></div>
+            </section>
+            <section>
+                <h3 class="manage-column-title">Anekdoty</h3>
+                <div class="manage-list" id="manageAnecdotesList"></div>
+            </section>
+        </div>
     </div>
 </main>
 

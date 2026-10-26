@@ -4,13 +4,28 @@ const workspace = document.getElementById('blocksWorkspace');
 let blockCounter = 0;
 
 // Track selected article IDs for the anecdote feature
-let attachedArticleIds = new Set(); 
+let attachedArticleIds = new Set();
 
 // Track selected anecdote IDs for the article feature
 let attachedAnecdoteIds = new Set();
 
+// Edit mode state (null = the form is creating something new)
+let editingArticleId = null;
+let editingArticleCoverUrl = null;
+let editingArticleOriginalUrls = [];   // Storage files the article used before editing
+let editingAnecdoteId = null;
+let editingAnecdoteOriginalUrl = null;
+
 // Global variable to lock down the active author profile dynamically
 let currentLoggedAuthor = "Anonymní redaktor";
+
+// Resolves once Firebase knows whether somebody is logged in
+const authReady = new Promise((resolve) => {
+    const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+        unsubscribe();
+        resolve(user);
+    });
+});
 
 // Spawn an initial empty text block for articles on load
 if (workspace) {
@@ -22,19 +37,18 @@ if (workspace) {
    ========================================================================== */
 firebase.auth().onAuthStateChanged(async (user) => {
     if (user) {
-        // 1. Core fallback baseline
         currentLoggedAuthor = user.displayName || user.email.split('@')[0];
 
         try {
-            // 2. FIXED: Lookup custom nickname override using user.email instead of user.uniqueId
-            const userDoc = await db.collection("users").doc(user.email).get();
+            // auth.js stores nicknames under the user's UID
+            const userDoc = await db.collection("users").doc(user.uid).get();
             if (userDoc.exists && userDoc.data().nickname) {
                 currentLoggedAuthor = userDoc.data().nickname;
             }
         } catch (err) {
             console.error("Failed to read user nickname override:", err);
         }
-        
+
         console.log("Active author identity locked:", currentLoggedAuthor);
     } else {
         currentLoggedAuthor = "Anonymní redaktor";
@@ -44,33 +58,36 @@ firebase.auth().onAuthStateChanged(async (user) => {
 /* ==========================================================================
    1. EDITING MODE SWITCHER OPERATIONS
    ========================================================================== */
+const EDITOR_MODES = {
+    article:  { container: 'articleWorkspaceContainer',  tab: 'modeBtnArticle' },
+    anecdote: { container: 'anecdoteWorkspaceContainer', tab: 'modeBtnAnecdote' },
+    manage:   { container: 'manageWorkspaceContainer',   tab: 'modeBtnManage' }
+};
+
+// Shows one workspace and highlights its tab (does not touch the edit state)
+function showWorkspace(mode) {
+    Object.entries(EDITOR_MODES).forEach(([name, ids]) => {
+        const isActive = name === mode;
+        document.getElementById(ids.container).style.display = isActive ? 'block' : 'none';
+        document.getElementById(ids.tab).style.borderBottom = isActive
+            ? '3px solid var(--text-color)'
+            : '1px solid var(--border-color)';
+    });
+
+    // File inputs are optional while editing (the existing file is kept)
+    document.getElementById('title').required = (mode === 'article');
+    document.getElementById('coverCaption').required = (mode === 'article');
+    document.getElementById('coverImageFile').required = (mode === 'article' && !editingArticleId);
+    document.getElementById('anecdoteFile').required = !editingAnecdoteId;
+}
+
 window.switchEditorMode = function(mode) {
-    const artWS = document.getElementById('articleWorkspaceContainer');
-    const aneWS = document.getElementById('anecdoteWorkspaceContainer');
-    const btnArt = document.getElementById('modeBtnArticle');
-    const btnAne = document.getElementById('modeBtnAnecdote');
+    // The tabs always open a clean form, so leave edit mode if we were in it
+    if (editingArticleId) resetArticleForm();
+    if (editingAnecdoteId) resetAnecdoteForm();
 
-    if (mode === 'anecdote') {
-        artWS.style.display = 'none';
-        aneWS.style.display = 'block';
-        btnArt.style.borderBottom = '1px solid var(--border-color)';
-        btnAne.style.borderBottom = '3px solid var(--text-color)';
-        
-        // Remove 'required' parameters from article fields to avoid validation blocking
-        document.getElementById('title').required = false;
-        document.getElementById('coverImageFile').required = false;
-        document.getElementById('coverCaption').required = false;
-    } else {
-        artWS.style.display = 'block';
-        aneWS.style.display = 'none';
-        btnAne.style.borderBottom = '1px solid var(--border-color)';
-        btnArt.style.borderBottom = '3px solid var(--text-color)';
-
-        // Re-enable validation parameters on article fields
-        document.getElementById('title').required = true;
-        document.getElementById('coverImageFile').required = true;
-        document.getElementById('coverCaption').required = true;
-    }
+    showWorkspace(mode);
+    if (mode === 'manage') loadManagerLists();
 };
 
 /* ==========================================================================
@@ -286,86 +303,171 @@ window.removeAnecdoteRelation = function(id) {
 };
 
 /* ==========================================================================
-   3. ANECDOTE FIREBASE SUBMISSION PIPELINE (SMART ENGINE)
+   3. SHARED HELPERS
+   ========================================================================== */
+
+// Image or video, based on the MIME type (falls back to the file extension)
+function detectMediaType(file) {
+    if (file.type && file.type.startsWith('video/')) return 'video';
+    if (file.type && file.type.startsWith('image/')) return 'image';
+    const extension = file.name.split('.').pop().toLowerCase();
+    return ['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(extension) ? 'video' : 'image';
+}
+
+function getRelatedIds(raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw.map(id => String(id).trim()).filter(Boolean);
+}
+
+// Every Storage file an article uses (cover + inline images)
+function collectArticleMediaUrls(articleData) {
+    const urls = [articleData.coverImage];
+    (articleData.blocks || []).forEach(block => {
+        if (block.type === 'image') urls.push(block.url);
+    });
+    return urls.filter(Boolean);
+}
+
+// Best-effort delete of files in Firebase Storage (never throws)
+async function deleteStorageFiles(urls) {
+    for (const url of urls) {
+        if (!url || !url.includes('firebasestorage')) continue;
+        try {
+            await storage.refFromURL(url).delete();
+        } catch (err) {
+            console.warn("Could not delete storage file:", url, err.code || err);
+        }
+    }
+}
+
+function formatDate(timestamp) {
+    return timestamp ? timestamp.toDate().toLocaleDateString('cs-CZ') : '';
+}
+
+function formatDateTime(timestamp) {
+    return timestamp
+        ? timestamp.toDate().toLocaleString('cs-CZ', { dateStyle: 'medium', timeStyle: 'short' })
+        : '';
+}
+
+/* ==========================================================================
+   4. ANECDOTE FORM (CREATE + UPDATE)
    ========================================================================== */
 const anecdoteForm = document.getElementById('anecdoteForm');
 if (anecdoteForm) {
     anecdoteForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            alert("Pro zveřejnění anekdoty se musíte přihlásit.");
+            return;
+        }
+
+        const editId = editingAnecdoteId;
+        const isEditing = !!editId;
         const fileObj = document.getElementById('anecdoteFile').files[0];
-        if (!fileObj) {
+
+        if (!fileObj && !isEditing) {
             alert("Prosím vyberte soubor k nahrání.");
             return;
         }
 
         const submitBtn = document.getElementById('anecdoteSubmitBtn');
-        submitBtn.innerText = "Nahrávám anekdotu...";
+        const idleLabel = isEditing ? "Aktualizovat anekdotu" : "Zveřejnit Anekdotu";
+        submitBtn.innerText = isEditing ? "Ukládám změny..." : "Nahrávám anekdotu...";
         submitBtn.disabled = true;
 
         try {
-            // AUTOMATED TYPE DETECTION: Inspect system mime type property safely
-            let detectedType = 'image'; // Baseline default fallback
-            if (fileObj.type && fileObj.type.startsWith('video/')) {
-                detectedType = 'video';
-            } else if (fileObj.type && fileObj.type.startsWith('image/')) {
-                detectedType = 'image';
-            } else {
-                // Secondary fallback via common video formats extension verification
-                const fileExtension = fileObj.name.split('.').pop().toLowerCase();
-                const videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'mov'];
-                if (videoExtensions.includes(fileExtension)) {
-                    detectedType = 'video';
+            // Upload only if a (new) file was chosen
+            let mediaUrl = null;
+            let mediaType = null;
+            if (fileObj) {
+                mediaType = detectMediaType(fileObj);
+                // Per-user folder so Storage rules can verify ownership
+                const storagePath = `anecdotes/${user.uid}/${Date.now()}_${fileObj.name}`;
+                const snapshot = await storage.ref(storagePath).put(fileObj);
+                mediaUrl = await snapshot.ref.getDownloadURL();
+            }
+
+            if (isEditing) {
+                const changes = {
+                    "Related articles": Array.from(attachedArticleIds),
+                    updatedAt: firebase.firestore.Timestamp.now()
+                };
+                if (mediaUrl) {
+                    changes.url = mediaUrl;
+                    changes.type = mediaType;
                 }
+
+                await db.collection("anecdotes").doc(editId).update(changes);
+
+                // The old file is no longer used
+                if (mediaUrl) await deleteStorageFiles([editingAnecdoteOriginalUrl]);
+
+                resetAnecdoteForm();
+                showWorkspace('manage');
+                loadManagerLists();
+            } else {
+                const querySnapshot = await db.collection("anecdotes")
+                    .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
+                    .limit(1)
+                    .get();
+
+                let nextIdString = "0001";
+                if (!querySnapshot.empty) {
+                    const numericId = parseInt(querySnapshot.docs[0].id, 10);
+                    nextIdString = String(numericId + 1).padStart(4, '0');
+                }
+
+                await db.collection("anecdotes").doc(nextIdString).set({
+                    author: document.getElementById('userMenuBtn').textContent.replace('▾', '').trim(),
+                    authorUid: user.uid, // ownership key used by the security rules
+                    date: firebase.firestore.Timestamp.now(),
+                    type: mediaType,
+                    url: mediaUrl,
+                    "Related articles": Array.from(attachedArticleIds)
+                });
+
+                window.location.href = "anecdotes.html";
             }
-
-            // 1. Process upload directly using the auto-computed paths
-            const storagePath = `anecdotes/${Date.now()}_${fileObj.name}`;
-            const snapshot = await storage.ref(storagePath).put(fileObj);
-            const downloadURL = await snapshot.ref.getDownloadURL();
-
-            // 2. Resolve document increment index counts ('001', '002'...)
-            const querySnapshot = await db.collection("anecdotes")
-                .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
-                .limit(1)
-                .get();
-
-            let nextIdString = "0001";
-            if (!querySnapshot.empty) {
-                const highestDocId = querySnapshot.docs[0].id;
-                const numericId = parseInt(highestDocId, 10);
-                nextIdString = String(numericId + 1).padStart(4, '0');
-            }
-
-            // 3. Assemble complete structured document mapping currentLoggedAuthor profile
-            const anecdoteDocument = {
-                author: document.getElementById('userMenuBtn').textContent.replace('▾', '').trim(),
-                date: firebase.firestore.Timestamp.now(),
-                type: detectedType,
-                url: downloadURL,
-                "Related articles": Array.from(attachedArticleIds)
-            };
-
-            // 4. Save directly into Firestore database collection node
-            await db.collection("anecdotes").doc(nextIdString).set(anecdoteDocument);
-            window.location.href = "anecdotes.html";
 
         } catch (err) {
-            console.error("Anecdote submission loop crashed:", err);
-            alert("Nahrávání anekdoty selhalo.");
-            submitBtn.innerText = "Zveřejnit Anekdotu";
+            console.error("Anecdote submission failed:", err);
+            alert(err.code === 'permission-denied'
+                ? "Nemáte oprávnění provést tuto operaci."
+                : "Nahrávání anekdoty selhalo.");
+            submitBtn.innerText = idleLabel;
             submitBtn.disabled = false;
         }
     });
 }
 
+function resetAnecdoteForm() {
+    editingAnecdoteId = null;
+    editingAnecdoteOriginalUrl = null;
+
+    document.getElementById('anecdoteForm').reset();
+    attachedArticleIds = new Set();
+    document.getElementById('selectedArticlesWorkspace').innerHTML = '';
+
+    document.getElementById('anecdoteCurrentPreview').style.display = 'none';
+    document.getElementById('anecdoteHeading').innerText = 'Kompilátor Anekdot';
+    document.getElementById('anecdoteCancelEditBtn').style.display = 'none';
+
+    const submitBtn = document.getElementById('anecdoteSubmitBtn');
+    submitBtn.innerText = 'Zveřejnit Anekdotu';
+    submitBtn.disabled = false;
+}
+
 /* ==========================================================================
-   4. ARTICLE FORM LOGIC MODULAR PIPELINE (ORIGINAL)
+   5. ARTICLE FORM (CREATE + UPDATE)
    ========================================================================== */
-function createBlockNode(type) {
+// data (optional) prefills the block when editing an existing article
+function createBlockNode(type, data) {
     blockCounter++;
     const uniqueId = `block_${blockCounter}`;
-    
+
     const blockWrapper = document.createElement('div');
     blockWrapper.className = 'block-item';
     blockWrapper.id = uniqueId;
@@ -402,6 +504,29 @@ function createBlockNode(type) {
 
     blockWrapper.innerHTML = innerFormHTML;
     workspace.appendChild(blockWrapper);
+
+    // Prefill when editing
+    if (data) {
+        if (type === 'paragraph' || type === 'blockquote') {
+            blockWrapper.querySelector('.content-field').value = data.content || '';
+        } else if (type === 'image') {
+            blockWrapper.dataset.existingUrl = data.url || '';
+            blockWrapper.querySelector('.caption-field').value = data.caption || '';
+
+            const fileField = blockWrapper.querySelector('.file-field');
+            fileField.required = false; // keep the current image unless a new one is chosen
+
+            const note = document.createElement('div');
+            note.className = 'current-media-note';
+            const preview = document.createElement('img');
+            preview.src = data.url;
+            preview.alt = 'Současný obrázek';
+            const hint = document.createElement('span');
+            hint.textContent = 'Současný obrázek. Pokud nevyberete nový soubor, zůstane zachován.';
+            note.append(preview, hint);
+            blockWrapper.insertBefore(note, fileField);
+        }
+    }
 }
 
 window.deleteBlockNode = function(id) {
@@ -415,9 +540,16 @@ function uploadFileAsync(fileObject) {
             resolve("https://picsum.photos/800/500");
             return;
         }
-        const uniqueFilename = `${Date.now()}_${fileObject.name}`;
-        const storageRef = storage.ref(`articles/${uniqueFilename}`);
-        
+
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            reject(new Error("Not logged in"));
+            return;
+        }
+
+        // Per-user folder so Storage rules can verify ownership
+        const storageRef = storage.ref(`articles/${user.uid}/${Date.now()}_${fileObject.name}`);
+
         storageRef.put(fileObject)
             .then(snapshot => snapshot.ref.getDownloadURL())
             .then(downloadURL => resolve(downloadURL))
@@ -430,9 +562,18 @@ if (modularArticleForm) {
     modularArticleForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        const submitBtn = e.target.querySelector('.submit-btn');
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            alert("Pro zveřejnění článku se musíte přihlásit.");
+            return;
+        }
+
+        const editId = editingArticleId;
+        const isEditing = !!editId;
+        const submitBtn = document.getElementById('articleSubmitBtn');
+        const idleLabel = isEditing ? "Aktualizovat článek" : "Zveřejnit článek";
         const DOMBlocks = workspace.querySelectorAll('.block-item');
-        
+
         if (DOMBlocks.length === 0) {
             alert("Článek musí obsahovat alespoň jeden funkční modul!");
             return;
@@ -449,69 +590,353 @@ if (modularArticleForm) {
 
         try {
             const title = document.getElementById('title').value.trim();
-            const category = document.getElementById('category').value;
+            const category = document.querySelector('input[name="category"]:checked')?.value || "Aktuality";
             const coverCaptionInput = document.getElementById('coverCaption').value.trim();
             const finalCoverCaption = coverCaptionInput || `Snímek pořízen redaktorem ${currentLoggedAuthor}`;
-            const coverFileElement = document.getElementById('coverImageFile').files[0];
-            const uploadedCoverUrl = await uploadFileAsync(coverFileElement);
 
-            let blocksPayloadArray = [];
+            // Keep the existing cover when editing and no new file was chosen
+            const coverFile = document.getElementById('coverImageFile').files[0];
+            const coverUrl = (isEditing && !coverFile && editingArticleCoverUrl)
+                ? editingArticleCoverUrl
+                : await uploadFileAsync(coverFile);
+
+            const blocksPayloadArray = [];
 
             for (let blockNode of DOMBlocks) {
                 const type = blockNode.getAttribute('data-type');
-                
-                if (type === 'paragraph') {
+
+                if (type === 'paragraph' || type === 'blockquote') {
                     const val = blockNode.querySelector('.content-field').value.trim();
-                    blocksPayloadArray.push({ type: "paragraph", content: val });
-                } 
-                else if (type === 'blockquote') {
-                    const val = blockNode.querySelector('.content-field').value.trim();
-                    blocksPayloadArray.push({ type: "blockquote", content: val });
-                } 
+                    blocksPayloadArray.push({ type: type, content: val });
+                }
                 else if (type === 'image') {
-                    const inlineFileObject = blockNode.querySelector('.file-field').files[0];
+                    const inlineFile = blockNode.querySelector('.file-field').files[0];
                     const caption = blockNode.querySelector('.caption-field').value.trim();
-                    const uploadedInlineImageUrl = await uploadFileAsync(inlineFileObject);
-                    
-                    blocksPayloadArray.push({ 
-                        type: "image", 
-                        url: uploadedInlineImageUrl, 
-                        caption: caption 
-                    });
+                    const existingUrl = blockNode.dataset.existingUrl;
+
+                    const imageUrl = (!inlineFile && existingUrl)
+                        ? existingUrl
+                        : await uploadFileAsync(inlineFile);
+
+                    blocksPayloadArray.push({ type: "image", url: imageUrl, caption: caption });
                 }
             }
 
-            const querySnapshot = await db.collection("articles")
-                .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
-                .limit(1)
-                .get();
-
-            let nextIdString = "0001";
-            if (!querySnapshot.empty) {
-                const highestDocId = querySnapshot.docs[0].id;
-                const numericId = parseInt(highestDocId, 10);
-                nextIdString = String(numericId + 1).padStart(4, '0');
-            }
-
-            const articleDocument = {
+            const articleFields = {
                 title: title,
-                author: document.getElementById('userMenuBtn').textContent.replace('▾', '').trim(),
                 category: category,
-                coverImage: uploadedCoverUrl,
+                coverImage: coverUrl,
                 coverCaption: finalCoverCaption,
-                date: firebase.firestore.Timestamp.now(),
                 blocks: blocksPayloadArray,
                 "Related anecdotes": Array.from(attachedAnecdoteIds)
             };
 
-            await db.collection("articles").doc(nextIdString).set(articleDocument);
-            window.location.href = "index.html";
+            if (isEditing) {
+                await db.collection("articles").doc(editId).update({
+                    ...articleFields,
+                    updatedAt: firebase.firestore.Timestamp.now()
+                });
+
+                // Remove images that were replaced or dropped during the edit
+                const keptUrls = collectArticleMediaUrls(articleFields);
+                await deleteStorageFiles(editingArticleOriginalUrls.filter(url => !keptUrls.includes(url)));
+
+                resetArticleForm();
+                showWorkspace('manage');
+                loadManagerLists();
+            } else {
+                const querySnapshot = await db.collection("articles")
+                    .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
+                    .limit(1)
+                    .get();
+
+                let nextIdString = "0001";
+                if (!querySnapshot.empty) {
+                    const numericId = parseInt(querySnapshot.docs[0].id, 10);
+                    nextIdString = String(numericId + 1).padStart(4, '0');
+                }
+
+                await db.collection("articles").doc(nextIdString).set({
+                    ...articleFields,
+                    author: document.getElementById('userMenuBtn').textContent.replace('▾', '').trim(),
+                    authorUid: user.uid, // ownership key used by the security rules
+                    date: firebase.firestore.Timestamp.now()
+                });
+
+                window.location.href = "index.html";
+            }
 
         } catch (error) {
             console.error("Critical error in pipeline loop execution:", error);
-            alert("Operace selhala.");
-            submitBtn.innerText = "Zveřejnit článek";
+            alert(error.code === 'permission-denied'
+                ? "Nemáte oprávnění provést tuto operaci."
+                : "Operace selhala.");
+            submitBtn.innerText = idleLabel;
             submitBtn.disabled = false;
         }
     });
 }
+
+function resetArticleForm() {
+    editingArticleId = null;
+    editingArticleCoverUrl = null;
+    editingArticleOriginalUrls = [];
+
+    document.getElementById('modularArticleForm').reset();
+    workspace.innerHTML = '';
+    createBlockNode('paragraph');
+    attachedAnecdoteIds = new Set();
+    document.getElementById('selectedAnecdotesWorkspace').innerHTML = '';
+
+    document.getElementById('coverCurrentPreview').style.display = 'none';
+    document.getElementById('articleHeading').innerText = 'Kompilátor Článků';
+    document.getElementById('articleCancelEditBtn').style.display = 'none';
+
+    const submitBtn = document.getElementById('articleSubmitBtn');
+    submitBtn.innerText = 'Zveřejnit článek';
+    submitBtn.disabled = false;
+}
+
+/* ==========================================================================
+   6. "MY POSTS" MANAGER (LIST / EDIT / DELETE)
+   ========================================================================== */
+async function loadManagerLists() {
+    const articlesList = document.getElementById('manageArticlesList');
+    const anecdotesList = document.getElementById('manageAnecdotesList');
+    const showMessage = (text, color) => {
+        const html = `<div class="manage-empty"${color ? ` style="color:${color};"` : ''}>${text}</div>`;
+        articlesList.innerHTML = html;
+        anecdotesList.innerHTML = html;
+    };
+
+    showMessage('Načítám...');
+
+    await authReady;
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        showMessage('Pro správu příspěvků se musíte přihlásit.');
+        return;
+    }
+
+    try {
+        // Equality-only queries need no composite index; sorting happens below
+        const [articleSnap, anecdoteSnap] = await Promise.all([
+            db.collection("articles").where("authorUid", "==", user.uid).get(),
+            db.collection("anecdotes").where("authorUid", "==", user.uid).get()
+        ]);
+
+        renderManagerList(articlesList, sortNewestFirst(articleSnap.docs), 'article');
+        renderManagerList(anecdotesList, sortNewestFirst(anecdoteSnap.docs), 'anecdote');
+    } catch (err) {
+        console.error("Failed to load the user's posts:", err);
+        showMessage('Chyba při načítání příspěvků.', 'red');
+    }
+}
+
+function sortNewestFirst(docs) {
+    const millis = (doc) => doc.data().date ? doc.data().date.toMillis() : 0;
+    return [...docs].sort((a, b) => millis(b) - millis(a));
+}
+
+function renderManagerList(container, docs, kind) {
+    container.innerHTML = '';
+
+    if (docs.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'manage-empty';
+        empty.textContent = kind === 'article'
+            ? 'Zatím jste nezveřejnili žádný článek.'
+            : 'Zatím jste nezveřejnili žádnou anekdotu.';
+        container.appendChild(empty);
+        return;
+    }
+
+    docs.forEach((doc) => {
+        const data = doc.data();
+        let thumb, mainText, subText;
+
+        if (kind === 'article') {
+            thumb = createAnecdoteThumb(
+                { type: 'image', url: data.coverImage || 'https://picsum.photos/100' },
+                'manage-row-thumb'
+            );
+            mainText = data.title || 'Bez názvu';
+            subText = [data.category, formatDate(data.date)].filter(Boolean).join(' • ');
+        } else {
+            thumb = createAnecdoteThumb({ type: data.type, url: data.url }, 'manage-row-thumb');
+            mainText = formatDateTime(data.date) || 'Neznámé datum';
+            subText = data.type === 'video' ? 'Video' : 'Obrázek';
+        }
+
+        const info = document.createElement('div');
+        info.className = 'manage-row-info';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'manage-row-title';
+        titleEl.textContent = mainText;
+        const subEl = document.createElement('div');
+        subEl.className = 'manage-row-sub';
+        subEl.textContent = subText;
+        info.append(titleEl, subEl);
+
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'manage-btn';
+        editBtn.textContent = 'Upravit';
+        editBtn.addEventListener('click', () => {
+            if (kind === 'article') startEditArticle(doc.id);
+            else startEditAnecdote(doc.id);
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'manage-btn delete';
+        deleteBtn.textContent = 'Smazat';
+        deleteBtn.addEventListener('click', () => deleteEntry(kind, doc.id, mainText, data));
+
+        const actions = document.createElement('div');
+        actions.className = 'manage-row-actions';
+        actions.append(editBtn, deleteBtn);
+
+        const row = document.createElement('div');
+        row.className = 'manage-row';
+        row.append(thumb, info, actions);
+        container.appendChild(row);
+    });
+}
+
+async function deleteEntry(kind, id, label, data) {
+    const noun = kind === 'article' ? 'článek' : 'anekdotu';
+    if (!confirm(`Opravdu chcete smazat ${noun} „${label}“?\nTuto akci nelze vrátit zpět.`)) return;
+
+    try {
+        await db.collection(kind === 'article' ? 'articles' : 'anecdotes').doc(id).delete();
+    } catch (err) {
+        console.error("Delete failed:", err);
+        alert(err.code === 'permission-denied'
+            ? "Nemáte oprávnění tento příspěvek smazat."
+            : "Smazání se nezdařilo.");
+        return;
+    }
+
+    // The Firestore document is gone; now clean up its files (best effort)
+    await deleteStorageFiles(kind === 'article' ? collectArticleMediaUrls(data) : [data.url]);
+    loadManagerLists();
+}
+
+async function startEditArticle(id) {
+    try {
+        const snap = await db.collection("articles").doc(id).get();
+        if (!snap.exists) {
+            alert("Článek nebyl nalezen.");
+            loadManagerLists();
+            return;
+        }
+        const data = snap.data();
+
+        // Start from a clean form, then fill it
+        resetArticleForm();
+        editingArticleId = id;
+        editingArticleCoverUrl = data.coverImage || null;
+        editingArticleOriginalUrls = collectArticleMediaUrls(data);
+
+        document.getElementById('title').value = data.title || '';
+        document.querySelectorAll('input[name="category"]').forEach(radio => {
+            radio.checked = (radio.value === data.category);
+        });
+        document.getElementById('coverCaption').value = data.coverCaption || '';
+
+        // Current cover preview
+        if (data.coverImage) {
+            const preview = document.getElementById('coverCurrentPreview');
+            const hint = document.createElement('span');
+            hint.textContent = 'Současný náhledový obrázek. Pokud nevyberete nový soubor, zůstane zachován.';
+            preview.innerHTML = '';
+            preview.append(createAnecdoteThumb({ type: 'image', url: data.coverImage }, null), hint);
+            preview.style.display = 'flex';
+        }
+
+        // Content blocks
+        workspace.innerHTML = '';
+        const knownTypes = ['paragraph', 'image', 'blockquote'];
+        const blocks = (data.blocks || []).filter(block => knownTypes.includes(block.type));
+        blocks.forEach(block => createBlockNode(block.type, block));
+        if (blocks.length === 0) createBlockNode('paragraph');
+
+        // Related anecdotes (skip any that no longer exist)
+        const anecdoteSnaps = await Promise.all(
+            getRelatedIds(data["Related anecdotes"]).map(relId => db.collection("anecdotes").doc(relId).get())
+        );
+        anecdoteSnaps.filter(s => s.exists).forEach(s => {
+            const d = s.data();
+            selectAnecdoteRelation({
+                id: s.id,
+                author: d.author || "Neznámý autor",
+                type: d.type || "image",
+                url: d.url || ""
+            });
+        });
+
+        document.getElementById('articleHeading').innerText = 'Úprava článku';
+        document.getElementById('articleSubmitBtn').innerText = 'Aktualizovat článek';
+        document.getElementById('articleCancelEditBtn').style.display = 'flex';
+
+        showWorkspace('article');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (err) {
+        console.error("Failed to open the article for editing:", err);
+        alert("Článek se nepodařilo načíst k úpravě.");
+    }
+}
+
+async function startEditAnecdote(id) {
+    try {
+        const snap = await db.collection("anecdotes").doc(id).get();
+        if (!snap.exists) {
+            alert("Anekdota nebyla nalezena.");
+            loadManagerLists();
+            return;
+        }
+        const data = snap.data();
+
+        resetAnecdoteForm();
+        editingAnecdoteId = id;
+        editingAnecdoteOriginalUrl = data.url || null;
+
+        // Current media preview
+        const preview = document.getElementById('anecdoteCurrentPreview');
+        const hint = document.createElement('span');
+        hint.textContent = 'Současný soubor. Pokud nevyberete nový, zůstane zachován.';
+        preview.innerHTML = '';
+        preview.append(createAnecdoteThumb({ type: data.type, url: data.url }, null), hint);
+        preview.style.display = 'flex';
+
+        // Related articles (skip any that no longer exist)
+        const articleSnaps = await Promise.all(
+            getRelatedIds(data["Related articles"]).map(relId => db.collection("articles").doc(relId).get())
+        );
+        articleSnaps.filter(s => s.exists).forEach(s => {
+            const d = s.data();
+            selectArticleRelation(s.id, d.title || "Bez názvu", d.coverImage || "https://picsum.photos/100");
+        });
+
+        document.getElementById('anecdoteHeading').innerText = 'Úprava anekdoty';
+        document.getElementById('anecdoteSubmitBtn').innerText = 'Aktualizovat anekdotu';
+        document.getElementById('anecdoteCancelEditBtn').style.display = 'flex';
+
+        showWorkspace('anecdote');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (err) {
+        console.error("Failed to open the anecdote for editing:", err);
+        alert("Anekdotu se nepodařilo načíst k úpravě.");
+    }
+}
+
+window.cancelEdit = function(kind) {
+    if (kind === 'article') resetArticleForm();
+    else resetAnecdoteForm();
+
+    showWorkspace('manage');
+    loadManagerLists();
+};

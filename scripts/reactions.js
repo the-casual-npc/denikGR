@@ -16,9 +16,9 @@ const REACTIONS = [
     { key: 'love',  emoji: '❤️', label: 'Famózní' },
     { key: 'break', emoji: '💔', label: 'Gangu...' },
     { key: 'fixed',   emoji: '❤️‍🩹', label: 'Vše je jak má být' },
-    { key: 'reactity',   emoji: '😀', label: 'Reaktity' },
     { key: 'angry', emoji: '😡', label: 'Grrrr' },
-    { key: 'true', image: 'img/reactions/true.png', label: 'True'}
+    { key: 'true', image: 'img/reactions/true.png', label: 'True'},
+    { key: 'what', image: 'img/reactions/what.png', label: '???'}
 ];
 
 const MAX_COMMENT_LENGTH = 1000; // keep in sync with the Firestore rules

@@ -138,6 +138,132 @@ function cropToSquareBlob(file, size) {
 }
 
 /* ==========================================================================
+   7. COMMENTS WRITTEN BY THIS USER
+   ========================================================================== */
+const MAX_PROFILE_COMMENTS = 20; // only the newest N comments are shown
+
+// Placeholder rows for the demo profile
+const DEMO_COMMENTS = [
+    {
+        title: 'Obchodní dům v plamenech kvůli creeperovi',
+        text: 'Tohle jsem viděl na vlastní oči, creeper to měl namířeno přímo na vchod!',
+        date: '12. 10. 2026 19:20',
+        thumbUrl: 'https://picsum.photos/seed/denik-a1/100/100'
+    },
+    {
+        title: 'Nová zastávka na lince do Netheru',
+        text: 'Konečně! Doufám, že budou jezdit i v noci, protože ráno je tam pořád plno.',
+        date: '8. 10. 2026 8:15',
+        thumbUrl: 'https://picsum.photos/seed/denik-a2/100/100'
+    }
+];
+
+const postMillis = (timestamp) => timestamp ? timestamp.toMillis() : 0;
+
+async function loadCommentsSection(uid) {
+    byId('profileCommentsSection').style.display = 'none';
+
+    try {
+        // Collection group query over every article's "comments" subcollection.
+        // Needs the extra Firestore rule and the single-field index from the setup notes.
+        const snap = await db.collectionGroup('comments').where('uid', '==', uid).get();
+        if (profileState.uid !== uid) return; // another profile was opened in the meantime
+
+        // Keep only comments that belong to an article
+        const comments = snap.docs
+            .map(doc => ({ data: doc.data(), articleRef: doc.ref.parent.parent }))
+            .filter(c => c.articleRef && c.articleRef.parent.id === 'articles');
+
+        // Look up each article once
+        const articleIds = [...new Set(comments.map(c => c.articleRef.id))];
+        const articleDocs = await Promise.all(
+            articleIds.map(id => db.collection('articles').doc(id).get())
+        );
+        const articlesById = {};
+        articleDocs.forEach(doc => { if (doc.exists) articlesById[doc.id] = doc.data(); });
+
+        if (profileState.uid !== uid) return;
+
+        const rows = comments
+            .filter(c => articlesById[c.articleRef.id]) // skip comments of deleted articles
+            .sort((a, b) => postMillis(b.data.createdAt) - postMillis(a.data.createdAt))
+            .map(c => {
+                const article = articlesById[c.articleRef.id];
+                return {
+                    title: article.title || 'Bez názvu',
+                    thumbUrl: article.coverImage || POST_PLACEHOLDER_IMAGE,
+                    text: c.data.text || '',
+                    date: formatPostDateTime(c.data.createdAt),
+                    href: `article.html?id=${encodeURIComponent(c.articleRef.id)}`
+                };
+            });
+
+        renderProfileComments(rows.slice(0, MAX_PROFILE_COMMENTS), rows.length);
+
+    } catch (err) {
+        // Most likely the index is still missing; the rest of the profile works fine
+        console.error("Failed to load the comments of this user:", err);
+    }
+}
+
+function renderProfileComments(rows, total) {
+    const section = byId('profileCommentsSection');
+
+    if (rows.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    byId('profileCommentsCount').textContent = `(${total})`;
+
+    const list = byId('profileCommentsList');
+    list.innerHTML = '';
+    rows.forEach(row => list.appendChild(buildProfileCommentRow(row)));
+
+    const note = byId('profileCommentsNote');
+    if (total > rows.length) {
+        note.textContent = `Zobrazeno posledních ${rows.length} komentářů.`;
+        note.style.display = 'block';
+    } else {
+        note.style.display = 'none';
+    }
+
+    section.style.display = 'block';
+}
+
+// One row: article cover + article title + the comment text + date
+function buildProfileCommentRow(row) {
+    const el = document.createElement(row.href ? 'a' : 'div');
+    el.className = 'profile-post-row profile-comment-row' + (row.href ? ' clickable' : '');
+    if (row.href) el.href = row.href;
+
+    const thumb = document.createElement('img');
+    thumb.className = 'profile-post-thumb';
+    thumb.src = row.thumbUrl;
+    thumb.alt = '';
+    thumb.loading = 'lazy';
+
+    const info = document.createElement('div');
+    info.className = 'profile-post-info';
+
+    const title = document.createElement('div');
+    title.className = 'profile-post-title';
+    title.textContent = row.title;
+
+    const text = document.createElement('div');
+    text.className = 'profile-comment-text';
+    text.textContent = row.text;
+
+    const date = document.createElement('div');
+    date.className = 'profile-post-sub';
+    date.textContent = row.date;
+
+    info.append(title, text, date);
+    el.append(thumb, info);
+    return el;
+}
+
+/* ==========================================================================
    3. LOADING A PROFILE
    ========================================================================== */
 // Re-runs whenever the login state is known or changes (e.g. login through the modal)
@@ -616,130 +742,4 @@ function openMediaFullscreen(mediaUrl, mediaType) {
     container.appendChild(media);
 
     lightbox.classList.add('active');
-}
-
-/* ==========================================================================
-   7. COMMENTS WRITTEN BY THIS USER
-   ========================================================================== */
-const MAX_PROFILE_COMMENTS = 20; // only the newest N comments are shown
-
-// Placeholder rows for the demo profile
-const DEMO_COMMENTS = [
-    {
-        title: 'Obchodní dům v plamenech kvůli creeperovi',
-        text: 'Tohle jsem viděl na vlastní oči, creeper to měl namířeno přímo na vchod!',
-        date: '12. 10. 2026 19:20',
-        thumbUrl: 'https://picsum.photos/seed/denik-a1/100/100'
-    },
-    {
-        title: 'Nová zastávka na lince do Netheru',
-        text: 'Konečně! Doufám, že budou jezdit i v noci, protože ráno je tam pořád plno.',
-        date: '8. 10. 2026 8:15',
-        thumbUrl: 'https://picsum.photos/seed/denik-a2/100/100'
-    }
-];
-
-const postMillis = (timestamp) => timestamp ? timestamp.toMillis() : 0;
-
-async function loadCommentsSection(uid) {
-    byId('profileCommentsSection').style.display = 'none';
-
-    try {
-        // Collection group query over every article's "comments" subcollection.
-        // Needs the extra Firestore rule and the single-field index from the setup notes.
-        const snap = await db.collectionGroup('comments').where('uid', '==', uid).get();
-        if (profileState.uid !== uid) return; // another profile was opened in the meantime
-
-        // Keep only comments that belong to an article
-        const comments = snap.docs
-            .map(doc => ({ data: doc.data(), articleRef: doc.ref.parent.parent }))
-            .filter(c => c.articleRef && c.articleRef.parent.id === 'articles');
-
-        // Look up each article once
-        const articleIds = [...new Set(comments.map(c => c.articleRef.id))];
-        const articleDocs = await Promise.all(
-            articleIds.map(id => db.collection('articles').doc(id).get())
-        );
-        const articlesById = {};
-        articleDocs.forEach(doc => { if (doc.exists) articlesById[doc.id] = doc.data(); });
-
-        if (profileState.uid !== uid) return;
-
-        const rows = comments
-            .filter(c => articlesById[c.articleRef.id]) // skip comments of deleted articles
-            .sort((a, b) => postMillis(b.data.createdAt) - postMillis(a.data.createdAt))
-            .map(c => {
-                const article = articlesById[c.articleRef.id];
-                return {
-                    title: article.title || 'Bez názvu',
-                    thumbUrl: article.coverImage || POST_PLACEHOLDER_IMAGE,
-                    text: c.data.text || '',
-                    date: formatPostDateTime(c.data.createdAt),
-                    href: `article.html?id=${encodeURIComponent(c.articleRef.id)}`
-                };
-            });
-
-        renderProfileComments(rows.slice(0, MAX_PROFILE_COMMENTS), rows.length);
-
-    } catch (err) {
-        // Most likely the index is still missing; the rest of the profile works fine
-        console.error("Failed to load the comments of this user:", err);
-    }
-}
-
-function renderProfileComments(rows, total) {
-    const section = byId('profileCommentsSection');
-
-    if (rows.length === 0) {
-        section.style.display = 'none';
-        return;
-    }
-
-    byId('profileCommentsCount').textContent = `(${total})`;
-
-    const list = byId('profileCommentsList');
-    list.innerHTML = '';
-    rows.forEach(row => list.appendChild(buildProfileCommentRow(row)));
-
-    const note = byId('profileCommentsNote');
-    if (total > rows.length) {
-        note.textContent = `Zobrazeno posledních ${rows.length} komentářů.`;
-        note.style.display = 'block';
-    } else {
-        note.style.display = 'none';
-    }
-
-    section.style.display = 'block';
-}
-
-// One row: article cover + article title + the comment text + date
-function buildProfileCommentRow(row) {
-    const el = document.createElement(row.href ? 'a' : 'div');
-    el.className = 'profile-post-row profile-comment-row' + (row.href ? ' clickable' : '');
-    if (row.href) el.href = row.href;
-
-    const thumb = document.createElement('img');
-    thumb.className = 'profile-post-thumb';
-    thumb.src = row.thumbUrl;
-    thumb.alt = '';
-    thumb.loading = 'lazy';
-
-    const info = document.createElement('div');
-    info.className = 'profile-post-info';
-
-    const title = document.createElement('div');
-    title.className = 'profile-post-title';
-    title.textContent = row.title;
-
-    const text = document.createElement('div');
-    text.className = 'profile-comment-text';
-    text.textContent = row.text;
-
-    const date = document.createElement('div');
-    date.className = 'profile-post-sub';
-    date.textContent = row.date;
-
-    info.append(title, text, date);
-    el.append(thumb, info);
-    return el;
 }

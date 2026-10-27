@@ -437,11 +437,11 @@ byId('profileForm').addEventListener('submit', async (e) => {
     errorBox.textContent = '';
 
     if (minecraftName && !MC_NAME_PATTERN.test(minecraftName)) {
-        errorBox.textContent = 'Minecraft jméno musí mít 3–16 znaků (písmena, čísla a podtržítko).';
+        errorBox.textContent = 'Neplatný nick (3-16 znaků, A-Z, 0-9, "_", "-")';
         return;
     }
     if (bio.length > BIO_MAX_LENGTH) {
-        errorBox.textContent = `Text o vás může mít nejvýše ${BIO_MAX_LENGTH} znaků.`;
+        errorBox.textContent = `Bio může mít nejvýše ${BIO_MAX_LENGTH} znaků.`;
         return;
     }
 

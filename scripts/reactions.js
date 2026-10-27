@@ -14,6 +14,7 @@
 // been used. The emoji and the label can be changed freely.
 const REACTIONS = [
     { key: 'love',  emoji: '❤️', label: 'Famózní' },
+    { key: 'gem', emoji: '💎', label: 'Gem' },
     { key: 'break', emoji: '💔', label: 'Gangu...' },
     { key: 'fixed',   emoji: '❤️‍🩹', label: 'Vše je jak má být' },
     { key: 'angry', emoji: '😡', label: 'Grrrr' },

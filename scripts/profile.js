@@ -9,16 +9,10 @@
    1. CONFIGURATION
    ========================================================================== */
 const BIO_MAX_LENGTH = 300;                      // keep in sync with the Firestore rules
-const MC_NAME_PATTERN = /^[A-Za-z0-9_]{3,16}$/;  // valid Minecraft Java usernames
+const MC_NAME_PATTERN = /^[A-Za-z0-9_-]{3,16}$/;  // valid Minecraft Java usernames
 const AVATAR_SIZE = 256;                         // pictures are cropped to AVATAR_SIZE x AVATAR_SIZE px
 
 // Shown when nobody is logged in and no ?uid= is given (or with ?demo in the address)
-const DEMO_PROFILE = {
-    nickname: 'Testovací Hráč',
-    minecraftName: 'Steve',
-    bio: 'Toto je ukázkový profil, který se zobrazí bez přihlášení.\n\nZde bude krátký text o hráči: čím se na serveru zabývá, co staví nebo koho najdete v jeho obchodě.',
-    photoURL: ''
-};
 
 const AVATAR_PLACEHOLDER_SVG = `
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -272,25 +266,12 @@ firebase.auth().onAuthStateChanged((user) => {
     const requestedUid = params.get('uid');
     const targetUid = requestedUid || (user ? user.uid : null);
 
-    if (params.has('demo') || !targetUid) {
-        showDemoProfile();
+    if (!targetUid) {
+        window.location.href = "index.html";
     } else {
         loadProfile(targetUid, user);
     }
 });
-
-function showDemoProfile() {
-    profileState = {
-        uid: null,
-        isDemo: true,
-        isOwner: false,
-        profile: { ...DEMO_PROFILE },
-        pendingAvatar: null,
-        removeAvatar: false
-    };
-    renderProfile();
-    renderPostsSection(DEMO_POSTS.articles, DEMO_POSTS.anecdotes);}
-    renderProfileComments(DEMO_COMMENTS, DEMO_COMMENTS.length);
 
 async function loadProfile(uid, user) {
     showOnly('loading');
@@ -356,7 +337,7 @@ function renderProfile() {
     } else if (canEdit) {
         const hint = document.createElement('span');
         hint.className = 'profile-muted';
-        hint.textContent = 'Minecraft jméno zatím není nastaveno.';
+        hint.textContent = '';
         mcRow.appendChild(hint);
     }
 
@@ -366,9 +347,7 @@ function renderProfile() {
         bioEl.textContent = profile.bio;
         bioEl.classList.remove('profile-muted');
     } else {
-        bioEl.textContent = canEdit
-            ? 'Zatím jste o sobě nic nenapsali.'
-            : 'Tento hráč o sobě zatím nic nenapsal.';
+        bioEl.textContent = 'Zatím žádné bio.'
         bioEl.classList.add('profile-muted');
     }
 

@@ -16,7 +16,25 @@
     margin-top: 0;
 }
 
+/* ---- Reaction icons (custom PNGs) ---- */
+/* Sized in em, so they scale with the text around them: chips and picker buttons both stay proportional */
+.reaction-icon {
+    width: 1.25em;
+    height: 1.25em;
+    display: inline-block;
+    object-fit: contain;
+    vertical-align: middle;
+    border-radius: 0;
+    flex-shrink: 0;
+}
+
+/* For pixel-art textures: no smoothing when scaled up */
+.reaction-icon.pixelated {
+    image-rendering: pixelated;
+}
+
 /* ---- Reaction bar (chips) ---- */
+
 .reaction-bar {
     display: flex;
     flex-wrap: wrap;
@@ -135,21 +153,27 @@
     gap: 14px;
 }
 
-.comment-reaction {
+/* Placeholder profile picture */
+.comment-avatar {
     width: 40px;
     height: 40px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
     background: var(--panel-bg);
     border: 1px solid var(--border-color);
     border-radius: 50%;
+    color: var(--meta-text);
+    overflow: hidden;
 }
 
-.comment-item.mine .comment-reaction {
-    border-color: var(--link-hover);
+/* For real profile pictures later (article.css makes every img 100% wide with rounded corners) */
+.comment-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
 }
 
 .comment-body {
@@ -205,6 +229,15 @@
 .comment-action-btn:hover { color: var(--link-hover); }
 .comment-action-btn.delete:hover { color: #e04a4a; }
 
+/* Inline editor (appears after clicking "Upravit") */
+.comment-editor {
+    margin-top: 6px;
+}
+
+.comment-edit-text {
+    min-height: 70px;
+}
+
 /* ---- Composer ---- */
 .comment-composer {
     background: var(--panel-bg);
@@ -220,55 +253,6 @@
     letter-spacing: 0.5px;
     color: var(--meta-text);
     margin-bottom: 12px;
-}
-
-.reaction-picker {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 14px;
-}
-
-.reaction-option {
-    position: relative;
-    cursor: pointer;
-}
-
-.reaction-option input {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-    pointer-events: none;
-}
-
-.reaction-option span {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background: var(--bg-color);
-    color: var(--text-color);
-    font-size: 0.85rem;
-    font-weight: 600;
-    opacity: 0.55;
-    transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-}
-
-.reaction-option:hover span { opacity: 0.85; }
-
-.reaction-option input:checked + span {
-    opacity: 1;
-    background: var(--text-color);
-    color: var(--bg-color);
-    border-color: var(--text-color);
-}
-
-.reaction-option input:focus-visible + span {
-    outline: 3px solid rgba(128, 128, 128, 0.35);
-    outline-offset: 2px;
 }
 
 .composer-text {
@@ -299,6 +283,10 @@
     margin-top: 8px;
 }
 
+.composer-error:empty {
+    margin-top: 0;
+}
+
 .composer-actions {
     display: flex;
     flex-wrap: wrap;
@@ -322,14 +310,18 @@
     transition: opacity 0.2s ease;
 }
 
+.composer-submit.small {
+    padding: 8px 18px;
+}
+
 .composer-submit:hover { opacity: 0.9; }
 .composer-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.composer-delete {
+.composer-cancel {
     background: none;
-    color: #ff4d4d;
-    border: 1px solid #ffccd0;
-    padding: 10px 18px;
+    color: var(--meta-text);
+    border: 1px solid var(--border-color);
+    padding: 8px 18px;
     font-family: inherit;
     font-size: 0.85rem;
     font-weight: 600;
@@ -338,10 +330,9 @@
     transition: all 0.2s ease;
 }
 
-.composer-delete:hover {
-    background: #ff4d4d;
-    color: #fff;
-    border-color: #ff4d4d;
+.composer-cancel:hover {
+    color: var(--text-color);
+    border-color: var(--text-color);
 }
 
 .composer-login {

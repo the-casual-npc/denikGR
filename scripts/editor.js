@@ -809,17 +809,18 @@ async function deleteEntry(kind, id, label, data) {
     if (!confirm(`Opravdu chcete smazat ${noun} „${label}“?\nTuto akci nelze vrátit zpět.`)) return;
 
         const collectionName = kind === 'article' ? 'articles' : 'anecdotes';
+        const subcollections = kind === 'article' ? ['reactions', 'comments'] : ['reactions'];
 
     try {
         const postRef = db.collection(collectionName).doc(id);
 
-        // Remove the post's reactions/comments first (the rules allow the post owner to do this)
-        const reactionsSnap = await postRef.collection('reactions').get();
-        if (!reactionsSnap.empty) {
-            const batch = db.batch();
-            reactionsSnap.docs.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
+        // Remove reactions/comments first (the rules allow the post owner to do this)
+        const batch = db.batch();
+        for (const name of subcollections) {
+            const snap = await postRef.collection(name).get();
+            snap.docs.forEach(doc => batch.delete(doc.ref));
         }
+        await batch.commit();
 
         await postRef.delete();
     } catch (err) {

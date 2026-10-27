@@ -15,11 +15,15 @@ db.collection("articles").doc(articleId).get()
             fetchRandomSuggestions(articleId);
             loadRelatedAnecdotes(doc.data()).catch(err => console.warn("Related anecdotes error:", err));
 
-            // Reactions (top bar) + comments (bottom of the article)
+            // Reactions (top bar): the add button stays visible even before the first reaction
             const reactions = createReactionController('articles', articleId);
-            renderReactionBar(document.getElementById('articleReactionChips'), reactions);
-            renderCommentsSection(document.getElementById('commentsSection'), reactions);
+            renderReactionBar(document.getElementById('articleReactionChips'), reactions, { alwaysShowAdd: true });
             reactions.load();
+
+            // Comments (bottom of the article)
+            const comments = createCommentController('articles', articleId);
+            renderCommentsSection(document.getElementById('commentsSection'), comments);
+            comments.load();
 
             // Turn off loading element and display the completed grid layout workspace
             document.getElementById('articleLoadingState').style.display = 'none';

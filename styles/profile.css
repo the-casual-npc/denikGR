@@ -1,0 +1,615 @@
+/* ==========================================================================
+   1. COLOR PALETTE
+   ========================================================================== */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #111111;
+    --border-color: #dddddd;
+    --card-bg: #fdfdfd;
+    --meta-text: #666666;
+    --panel-bg: #f8f9fa;
+    --link-hover: #0066cc;
+    --secondary-bg: #f9f9f9;
+}
+
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --border-color: #333333;
+    --card-bg: #1a1a1a;
+    --meta-text: #aaaaaa;
+    --panel-bg: #1e1e1e;
+    --link-hover: #4da6ff;
+    --secondary-bg: #181818;
+}
+
+/* ==========================================================================
+   2. RESET & BASE
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+    transition: color 0.2s ease;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ==========================================================================
+   3. HEADER, NAVIGATION, FOOTER, THEME TOGGLE
+   ========================================================================== */
+header {
+    background-color: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.header-top {
+    text-align: center;
+    padding: 20px 0 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+    font-family: "Georgia", serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    color: var(--text-color);
+}
+
+nav {
+    display: flex;
+    justify-content: center;
+    padding: 15px 0;
+    background-color: var(--bg-color);
+    transition: background-color 0.3s ease;
+}
+
+nav ul {
+    display: flex;
+    list-style: none;
+    gap: 25px;
+}
+
+nav a {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: var(--meta-text);
+}
+
+nav a:hover {
+    color: var(--link-hover);
+}
+
+footer {
+    background-color: #111;
+    color: #aaa;
+    padding: 40px 0;
+    font-size: 0.9rem;
+    text-align: center;
+    border-top: 4px solid var(--link-hover);
+    flex-shrink: 0;
+    margin-top: auto;
+}
+
+.theme-toggle-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--text-color);
+    color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    transition: transform 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.theme-toggle-btn:hover { transform: scale(1.05); }
+
+/* ==========================================================================
+   4. PROFILE PAGE
+   ========================================================================== */
+.profile-main {
+    flex: 1 0 auto;
+    width: 100%;
+    margin-top: 30px;
+    margin-bottom: 60px;
+}
+
+.profile-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 100px 20px;
+    color: var(--meta-text);
+}
+
+.profile-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--link-hover);
+    border-radius: 50%;
+    animation: profileSpin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes profileSpin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.profile-message {
+    max-width: 800px;
+    margin: 60px auto;
+    text-align: center;
+    color: var(--meta-text);
+    font-size: 1.05rem;
+    line-height: 2;
+}
+
+.profile-message a {
+    color: var(--link-hover);
+    font-weight: 600;
+}
+
+.profile-banner,
+.profile-status {
+    max-width: 800px;
+    margin: 0 auto 20px;
+    padding: 12px 18px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.profile-banner {
+    background: rgba(255, 170, 0, 0.12);
+    border: 1px dashed #e0a000;
+    color: var(--text-color);
+}
+
+.profile-status {
+    background: rgba(40, 167, 69, 0.12);
+    border: 1px solid #28a745;
+    color: var(--text-color);
+}
+
+.profile-card {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ---- View mode ---- */
+.profile-view {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+}
+
+.profile-avatar {
+    width: 128px;
+    height: 128px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--panel-bg);
+    border: 2px solid var(--border-color);
+    color: var(--meta-text);
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-avatar svg {
+    width: 55%;
+    height: 55%;
+}
+
+.profile-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.profile-name {
+    font-family: "Georgia", serif;
+    font-size: 2rem;
+    line-height: 1.2;
+    color: var(--text-color);
+    margin-bottom: 6px;
+    overflow-wrap: anywhere;
+}
+
+.profile-mc {
+    font-size: 0.9rem;
+    color: var(--meta-text);
+    margin-bottom: 16px;
+}
+
+.profile-mc strong {
+    color: var(--text-color);
+}
+
+.profile-bio {
+    font-family: "Georgia", serif;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--text-color);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    margin-bottom: 22px;
+}
+
+.profile-muted {
+    color: var(--meta-text);
+    font-style: italic;
+}
+
+@media (max-width: 600px) {
+    .profile-view {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+}
+
+/* ---- Buttons ---- */
+.profile-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    padding: 0 18px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.profile-btn:hover { border-color: var(--text-color); }
+
+.profile-btn.primary {
+    background: var(--text-color);
+    color: var(--bg-color);
+}
+
+.profile-btn.primary:hover { opacity: 0.9; }
+
+.profile-btn.danger {
+    color: #ff4d4d;
+    border-color: #ffccd0;
+}
+
+.profile-btn.danger:hover {
+    background: #ff4d4d;
+    color: #fff;
+    border-color: #ff4d4d;
+}
+
+.profile-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ---- Edit form ---- */
+.profile-form-title {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 10px;
+    margin-bottom: 25px;
+    border-bottom: 2px solid var(--text-color);
+}
+
+.profile-form-group {
+    margin-bottom: 22px;
+}
+
+.profile-form-group > label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--meta-text);
+}
+
+.profile-form-group input[type="text"],
+.profile-form-group textarea {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-form-group input[type="text"] {
+    height: 44px;
+}
+
+.profile-form-group textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.profile-form-group input[type="text"]:focus,
+.profile-form-group textarea:focus {
+    border-color: var(--text-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.15);
+}
+
+.field-hint {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: var(--meta-text);
+}
+
+.avatar-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+}
+
+.avatar-edit-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.profile-form-error {
+    min-height: 0;
+    margin-bottom: 14px;
+    color: #e04a4a;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.profile-form-error:empty {
+    margin-bottom: 0;
+}
+
+.profile-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* ==========================================================================
+   5. ARTICLES & ANECDOTES OF THE USER
+   ========================================================================== */
+.profile-posts {
+    max-width: 800px;
+    margin: 40px auto 0;
+}
+
+.profile-posts-title {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 10px;
+    margin-bottom: 25px;
+    border-bottom: 3px solid var(--text-color);
+}
+
+.profile-posts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+@media (max-width: 700px) {
+    .profile-posts-grid { grid-template-columns: 1fr; }
+}
+
+.profile-posts-column-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--meta-text);
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--text-color);
+}
+
+.profile-posts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.profile-post-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    transition: border-color 0.2s ease, background-color 0.3s ease;
+}
+
+.profile-post-row.clickable {
+    cursor: pointer;
+}
+
+.profile-post-row.clickable:hover {
+    border-color: var(--link-hover);
+}
+
+.profile-post-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #000;
+    flex-shrink: 0;
+}
+
+.profile-post-info {
+    flex: 1;
+    min-width: 0; /* lets the title ellipsis work inside flex */
+}
+
+.profile-post-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-post-sub {
+    font-size: 0.75rem;
+    color: var(--meta-text);
+}
+
+.profile-posts-empty {
+    text-align: center;
+    padding: 25px;
+    color: var(--meta-text);
+    font-size: 0.9rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 6px;
+}
+
+/* ---- Lightbox (anecdote image/video fullscreen) ---- */
+.lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.lightbox-overlay.active {
+    pointer-events: auto;
+    opacity: 1;
+}
+
+.lightbox-content {
+    max-width: 90vw;
+    max-height: 85vh;
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lightbox-overlay.active .lightbox-content {
+    transform: scale(1);
+}
+
+.lightbox-content img,
+.lightbox-content video {
+    width: auto;
+    height: auto;
+    max-width: 90vw;
+    max-height: 85vh;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: #fff;
+    font-size: 2.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+/* ---- Comments written by the user ---- */
+.profile-comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.profile-comment-row {
+    align-items: flex-start;
+}
+
+.profile-comment-text {
+    margin: 2px 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text-color);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}

@@ -153,6 +153,22 @@
     gap: 14px;
 }
 
+a.comment-avatar:hover {
+    border-color: var(--link-hover);
+}
+
+a.comment-author:hover {
+    color: var(--link-hover);
+}
+
+/* "aka <Minecraft name>" */
+.comment-aka {
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--meta-text);
+    opacity: 0.85;
+}
+
 /* Placeholder profile picture */
 .comment-avatar {
     width: 40px;

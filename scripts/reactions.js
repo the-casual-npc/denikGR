@@ -72,16 +72,50 @@ function reportReactionError(err) {
         : "Akci se nepodařilo dokončit. Zkuste to prosím znovu.");
 }
 
-// Placeholder profile picture. To use real pictures later, return an <img> here
-// (e.g. from a photoURL stored on the comment) instead of the silhouette.
-function createAvatarPlaceholder() {
-    const avatar = createEl('div', 'comment-avatar');
-    avatar.innerHTML = `
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
-            <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"/>
-        </svg>
-    `;
+const AVATAR_SVG = `
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+        <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"/>
+    </svg>
+`;
+
+// Profile picture, or the silhouette when there is none (or it fails to load).
+// With href the avatar becomes a link (to the user's profile).
+function createAvatar(photoURL, href) {
+    const avatar = createEl(href ? 'a' : 'div', 'comment-avatar');
+    if (href) {
+        avatar.href = href;
+        avatar.title = 'Zobrazit profil';
+    }
+
+    const showPlaceholder = () => { avatar.innerHTML = AVATAR_SVG; };
+
+    if (photoURL) {
+        const img = document.createElement('img');
+        img.src = photoURL;
+        img.alt = '';
+        img.addEventListener('error', showPlaceholder);
+        avatar.appendChild(img);
+    } else {
+        showPlaceholder();
+    }
     return avatar;
+}
+
+// Public profile data (users/<uid>) of comment authors, cached for the page
+const userProfileCache = {}; // uid -> { nickname, minecraftName, photoURL } | null
+
+async function loadUserProfiles(uids) {
+    const missing = [...new Set(uids)].filter(uid => !(uid in userProfileCache));
+
+    await Promise.all(missing.map(async (uid) => {
+        try {
+            const doc = await db.collection('users').doc(uid).get();
+            userProfileCache[uid] = doc.exists ? doc.data() : null;
+        } catch (err) {
+            console.warn("Could not load the profile of", uid, err);
+            userProfileCache[uid] = null;
+        }
+    }));
 }
 
 // Icon of a reaction: a custom <img> if "image" is set, otherwise the emoji
@@ -314,6 +348,7 @@ function createCommentController(collectionName, postId) {
             try {
                 const snap = await commentsRef().get();
                 comments = snap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+                await loadUserProfiles(comments.map(c => c.uid));
             } catch (err) {
                 console.error(`Failed to load comments for ${collectionName}/${postId}:`, err);
                 comments = [];
@@ -336,6 +371,7 @@ function createCommentController(collectionName, postId) {
                     updatedAt: now
                 };
                 const ref = await commentsRef().add(data);
+                await loadUserProfiles([user.uid]);
                 comments = [...comments, { ...data, id: ref.id }];
                 notify();
                 return true;
@@ -455,6 +491,11 @@ function renderCommentsSection(host, controller) {
         const isMine = !!user && comment.uid === user.uid;
         const isEditing = isMine && editingId === comment.id;
 
+        // Current profile data wins over the name saved with the comment
+        const profile = userProfileCache[comment.uid] || null;
+        const profileUrl = `profile.html?uid=${encodeURIComponent(comment.uid)}`;
+        const displayName = (profile && profile.nickname) || comment.nickname || 'Uživatel';
+
         const item = createEl('div', 'comment-item');
         const body = createEl('div', 'comment-body');
 
@@ -462,11 +503,19 @@ function renderCommentsSection(host, controller) {
             && comment.updatedAt.toMillis() !== comment.createdAt.toMillis();
 
         const head = createEl('div', 'comment-head');
-        head.append(
-            createEl('span', 'comment-author', comment.nickname || 'Uživatel'),
-            createEl('span', 'comment-date',
-                formatReactionDate(comment.createdAt) + (wasEdited ? ' (upraveno)' : ''))
-        );
+
+        const authorLink = createEl('a', 'comment-author', displayName);
+        authorLink.href = profileUrl;
+        head.appendChild(authorLink);
+
+        // "aka <Minecraft name>" (skipped when it is the same as the display name)
+        if (profile && profile.minecraftName
+            && profile.minecraftName.toLowerCase() !== displayName.toLowerCase()) {
+            head.appendChild(createEl('span', 'comment-aka', `aka ${profile.minecraftName}`));
+        }
+
+        head.appendChild(createEl('span', 'comment-date',
+            formatReactionDate(comment.createdAt) + (wasEdited ? ' (upraveno)' : '')));
         body.appendChild(head);
 
         if (isEditing) {
@@ -504,7 +553,7 @@ function renderCommentsSection(host, controller) {
             }
         }
 
-        item.append(createAvatarPlaceholder(), body);
+        item.append(createAvatar(profile && profile.photoURL, profileUrl), body);
         return item;
     }
 

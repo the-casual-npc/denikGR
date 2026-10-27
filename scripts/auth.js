@@ -168,8 +168,7 @@ auth.onAuthStateChanged((user) => {
                     ${finalNameToShow} ▾
                 </button>
                 <div id="userDropdown" class="user-dropdown-menu">
-                    <button class="user-dropdown-item" onclick="alert('Tato funkce ještě není dostupná')">Upravit Profil</button>
-                    <button class="user-dropdown-item" onclick="alert('Tato funkce ještě není dostupná')">Nastavení</button>
+                    <a href="profile.html" class="user-dropdown-item">Upravit Profil</a>
                     
                     ${isUserAdmin ? `<a href="editor.html" class="user-dropdown-item" style="color: var(--link-hover);">Editor</a>` : ''}
                     

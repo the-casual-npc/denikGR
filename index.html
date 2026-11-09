@@ -6,6 +6,7 @@
     <title>Deník.GR</title>
     <link rel="stylesheet" href="styles/auth.css">
     <link rel="stylesheet" href="styles/index.css">
+    <link rel="stylesheet" href="styles/reactions.css">
 </head>
 <body>
 
@@ -98,6 +99,15 @@
             </section>
 
             <aside>
+                <div class="widget" id="randomAnecdoteWidget" hidden>
+                    <h3 class="widget-title anecdote-widget-title">
+                        <span>Anekdota dne</span>
+                        <button type="button" class="anecdote-shuffle-btn" id="anecdoteShuffleBtn" title="Zobrazit jinou anekdotu" aria-label="Zobrazit jinou anekdotu">🔀</button>
+                    </h3>
+                    <div id="randomAnecdoteBody"></div>
+                    <a href="anecdotes.html" class="anecdote-widget-link">Všechny anekdoty →</a>
+                </div>
+
                 <div class="widget author-box">
                     <img class="author-avatar" src="img/pfps/omega.webp" alt="SH_Omega">
                     <div class="author-name">SH_Omega</div>
@@ -179,6 +189,8 @@
     </script>
     <script src="scripts/ads.js"></script>
     <script src="scripts/index.js"></script>
+    <script src="scripts/reactions.js"></script>
+    <script src="scripts/random-anecdote.js"></script>
     <script src="scripts/auth.js"></script>
 </body>
 </html>

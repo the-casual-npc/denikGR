@@ -322,8 +322,9 @@ function renderReactionBar(host, controller, { alwaysShowAdd = false } = {}) {
         host.appendChild(addBtn);
     }
 
-    controller.onChange(render);
+    const unsubscribe = controller.onChange(render);
     render();
+    return unsubscribe;
 }
 
 /* ==========================================================================
@@ -339,7 +340,15 @@ function createCommentController(collectionName, postId) {
     const controller = {
         get comments() { return comments; },
 
-        onChange(fn) { listeners.push(fn); },
+        // Views register here and re-render whenever the data or login state changes.
+        // Returns a function that unregisters the view again.
+        onChange(fn) {
+            listeners.push(fn);
+            return () => {
+                const index = listeners.indexOf(fn);
+                if (index >= 0) listeners.splice(index, 1);
+            };
+        },
 
         requireLogin() {
             const user = firebase.auth().currentUser;

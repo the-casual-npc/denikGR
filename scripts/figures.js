@@ -1,13 +1,19 @@
 // scripts/figures.js
 // "Osobnosti": directory of players. Verified profiles first, then all other accounts.
 //
-// Data: users/<uid> -> { nickname, minecraftName, bio, photoURL, verified }
+// Data: users/<uid> -> { nickname, minecraftName, bio, photoURL, profileColor, verified }
 // "verified: true" (a boolean, not the text "true") is set by hand in the Firebase console.
 
 /* ==========================================================================
    1. CONFIGURATION
    ========================================================================== */
 const BIO_PREVIEW_LENGTH = 140; // characters of the bio shown on a card
+const MC_NAME_PATTERN = /^[A-Za-z0-9_-]{3,16}$/; // valid Minecraft usernames
+const COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;       // profile colors are stored as #rrggbb
+const SKIN_WIDTH = 220;   // px, size of the skin picture on a card
+const SKIN_HEIGHT = 300;
+const SKIN_RENDER_SCALE = 2; // rendered at 2x so it stays sharp on high-DPI screens
+const SKINVIEW3D_URL = 'https://cdn.jsdelivr.net/npm/skinview3d@3.4.2/+esm';
 
 const AVATAR_PLACEHOLDER_SVG = `
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -60,6 +66,57 @@ function createFigureAvatar(photoURL) {
 }
 
 /* ==========================================================================
+   2b. SKIN PICTURES
+   ========================================================================== */
+// Every verified card gets a still picture of the player's skin. Instead of one live
+// 3D canvas per card (browsers allow only ~16 WebGL contexts per page), a single shared
+// viewer renders the skins one after another and exports each as a PNG.
+let skinviewModule = null;
+let skinRenderQueue = Promise.resolve();
+
+function renderSkinToDataUrl(username) {
+    return import(SKINVIEW3D_URL).then(async (skinview3d) => {
+        skinviewModule = skinview3d;
+
+        const canvas = document.createElement('canvas');
+        const viewer = new skinview3d.SkinViewer({
+            canvas: canvas,
+            width: SKIN_WIDTH * SKIN_RENDER_SCALE,
+            height: SKIN_HEIGHT * SKIN_RENDER_SCALE,
+            preserveDrawingBuffer: true, // needed so toDataURL() isn't blank
+            renderPaused: true           // we render a single frame by hand
+        });
+
+        try {
+            await viewer.loadSkin(`https://minotar.net/skin/${encodeURIComponent(username)}`);
+            viewer.playerObject.rotation.y = Math.PI / 8; // slight turn looks better than flat front
+            viewer.render();
+            return canvas.toDataURL('image/png');
+        } finally {
+            viewer.dispose();
+        }
+    });
+}
+
+// Fills the .figure-skin box; the box is removed again if the skin can't be loaded
+function loadSkinInto(box, username) {
+    // Queue the work so only one WebGL context exists at a time
+    skinRenderQueue = skinRenderQueue.then(async () => {
+        try {
+            const dataUrl = await renderSkinToDataUrl(username);
+            const img = document.createElement('img');
+            img.src = dataUrl;
+            img.alt = `Minecraft skin hráče ${username}`;
+            box.classList.remove('loading');
+            box.appendChild(img);
+        } catch (err) {
+            console.warn('Could not render the skin of', username, err);
+            box.remove();
+        }
+    });
+}
+
+/* ==========================================================================
    3. LOADING
    ========================================================================== */
 // Newest article of every author: { <authorUid>: { id, title, date, millis } }
@@ -107,6 +164,7 @@ async function loadFigures() {
                 minecraftName: data.minecraftName || '',
                 bio: data.bio || '',
                 photoURL: data.photoURL || '',
+                profileColor: COLOR_PATTERN.test(data.profileColor || '') ? data.profileColor : '',
                 verified: data.verified === true,
                 latestArticle: latestByAuthor[doc.id] || null
             };
@@ -164,6 +222,12 @@ function buildFigureCard(figure) {
     card.className = 'figure-card' + (figure.verified ? ' verified' : '');
     card.href = `profile.html?uid=${encodeURIComponent(figure.uid)}`;
 
+    // The player's profile color replaces the default blue accent on this card
+    if (figure.profileColor) {
+        card.classList.add('has-color');
+        card.style.setProperty('--card-accent', figure.profileColor);
+    }
+
     // Avatar + name (+ verified badge) + "aka <Minecraft name>"
     const head = document.createElement('div');
     head.className = 'figure-head';
@@ -179,13 +243,6 @@ function buildFigureCard(figure) {
     nameText.textContent = figure.nickname;
     name.appendChild(nameText);
 
-    if (figure.verified) {
-        const badge = document.createElement('span');
-        badge.className = 'verified-badge';
-        badge.title = 'Ověřený hráč';
-        badge.textContent = '✓';
-        name.appendChild(badge);
-    }
     names.appendChild(name);
 
     // Skipped when it is the same as the display name
@@ -210,6 +267,14 @@ function buildFigureCard(figure) {
         bio.textContent = 'Zatím bez popisu.';
     }
     card.appendChild(bio);
+
+    // Skin picture (verified players with a valid Minecraft name only)
+    if (figure.verified && MC_NAME_PATTERN.test(figure.minecraftName)) {
+        const skinBox = document.createElement('div');
+        skinBox.className = 'figure-skin loading';
+        card.appendChild(skinBox);
+        loadSkinInto(skinBox, figure.minecraftName);
+    }
 
     // Latest article (information only, the card itself links to the profile)
     if (figure.latestArticle) {

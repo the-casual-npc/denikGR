@@ -30,10 +30,10 @@ const TEXT_COMMENTS_ERROR = 'Komentáře se nepodařilo načíst.';
 const PROFILE_COLORS = [
     { name: 'Červená',   value: '#d94040' },
     { name: 'Oranžová',  value: '#e08a1e' },
-    { name: 'Zelená',    value: '#2e9e55' },
+    { name: 'Grunbergská zeleň',    value: '#2e9e55' },
     { name: 'Tyrkysová', value: '#1f9d9d' },
-    { name: 'Fialová',   value: '#8a4fd6' },
-    { name: 'Růžová',    value: '#d6489a' },
+    { name: 'Mr. Fiala special',   value: '#8a4fd6' },
+    { name: 'Signature Cassie růžová',    value: '#d6489a' },
     { name: 'Hnědá',     value: '#8b5a2b' },
     { name: 'Šedá',      value: '#6b7280' }
 ];

@@ -307,13 +307,19 @@ footer {
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.3s ease;
 }
 
-.figure-card.verified {
-    border-top: 3px solid var(--link-hover);
+/* --card-accent is set per card from the profile color; default = site blue */
+.figure-card {
+    --card-accent: var(--link-hover);
+}
+
+.figure-card.verified,
+.figure-card.has-color {
+    border-top: 3px solid var(--card-accent);
 }
 
 .figure-card:hover {
     transform: translateY(-2px);
-    border-color: var(--link-hover);
+    border-color: var(--card-accent);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -371,7 +377,7 @@ footer {
 }
 
 .figure-card:hover .figure-name-text {
-    color: var(--link-hover);
+    color: var(--card-accent);
 }
 
 .figure-aka {
@@ -421,4 +427,30 @@ footer {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* ---- Skin picture (verified cards) ---- */
+.figure-skin {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 313px; /* 300px picture + divider + padding; reserved so the card doesn't jump */
+    padding-top: 12px;
+    border-top: 1px dashed var(--border-color); /* same divider as above the latest article */
+}
+
+.figure-skin img {
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.figure-skin.loading {
+    animation: figureSkinPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes figureSkinPulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.5; }
 }

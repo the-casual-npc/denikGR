@@ -25,8 +25,7 @@
                 <div class="nav-right">
                     <a href="anecdotes.html" class="nav-extra-link">Anekdoty</a>
                     <a href="https://ploy-stapling-graves.ngrok-free.dev/" target="_blank" class="nav-extra-link">Mapa</a>
-                    <a href="#" class="nav-extra-link" onclick="alert('Tato funkce ještě není dostupná.')">Osobnosti</a>
-
+                    <a href="figures.html" class="nav-extra-link">Osobnosti</a>
                     <div id="authWrapper" class="user-dropdown-container">
                         <button id="openAuthBtn" class="login-trigger-btn">Přihlásit se</button>
                     </div>
@@ -86,12 +85,6 @@
         <!-- Short confirmation after saving -->
         <div id="profileStatus" class="profile-status" style="display:none;"></div>
 
-        <!-- Shown only for the placeholder profile -->
-        <div id="profileDemoBanner" class="profile-banner" style="display:none;">
-            Ukázkový profil: nejste přihlášeni, proto se zobrazují testovací hodnoty.
-            Úpravy se v tomto režimu neukládají.
-        </div>
-
         <div id="profileLoading" class="profile-loading">
             <div class="profile-spinner"></div>
             <div>Načítám profil...</div>
@@ -99,28 +92,88 @@
 
         <div id="profileMessage" class="profile-message" style="display:none;"></div>
 
-        <section class="profile-card" id="profileCard" style="display:none;">
+        <div class="profile-page" id="profilePage" style="display:none;">
 
-            <!-- VIEW MODE -->
-            <div class="profile-view" id="profileView">
-                <div class="profile-avatar" id="profileAvatar"></div>
+            <!-- ===== TOP BLOCK: three columns ===== -->
+            <div class="profile-layout">
 
-                <div class="profile-info">
-                    <h1 class="profile-name" id="profileName"></h1>
-                    <div class="profile-mc" id="profileMc"></div>
-                    <p class="profile-bio" id="profileBio"></p>
-                    <button type="button" class="profile-btn" id="profileEditBtn" style="display:none;">Upravit profil</button>
+                <!-- Left: picture + names, bio -->
+                <div class="profile-col profile-col-left">
+                    <section class="profile-card profile-header-card">
+                        <div class="profile-avatar" id="profileAvatar"></div>
+                        <div class="profile-id">
+                            <h1 class="profile-name" id="profileName"></h1>
+                            <div class="profile-mc" id="profileMc"></div>
+                            <button type="button" class="profile-btn small" id="profileEditBtn" style="display:none;">Upravit profil</button>
+                        </div>
+                    </section>
+
+                    <section class="profile-card profile-bio-card">
+                        <h2 class="profile-card-title">O mně</h2>
+                        <p class="profile-bio" id="profileBio"></p>
+                    </section>
+                </div>
+
+                <!-- Middle: Minecraft skin (verified players only) -->
+                <div class="profile-col profile-col-mid" id="skinColumn" style="display:none;">
+                    <section class="profile-card profile-skin-card">
+                        <h2 class="profile-card-title">Minecraft skin</h2>
+                        <div class="profile-skin" id="profileSkin"></div>
+                    </section>
+                </div>
+
+                <!-- Right: anecdotes, ad -->
+                <div class="profile-col profile-col-right">
+                    <section class="profile-card" id="anecdotesCard" style="display:none;">
+                        <h2 class="profile-card-title">Anekdoty <span id="profileAnecdotesCount"></span></h2>
+                        <div class="anecdote-thumb-grid" id="anecdotePreviewGrid"></div>
+                        <button type="button" class="profile-btn small block" id="anecdotesExpandBtn" style="display:none;">Zobrazit všechny</button>
+                    </section>
+
+                    <section class="profile-card">
+                        <h4 class="profile-card-title">Sponzorováno</h4>
+                        <div id="dynamicAdContainer" class="ad-layout-anchor"></div>
+                    </section>
                 </div>
             </div>
 
-            <!-- EDIT MODE -->
-            <form class="profile-form" id="profileForm" style="display:none;" novalidate>
-                <h2 class="profile-form-title">Upravit profil</h2>
+            <!-- ===== Articles (hidden when there are none) ===== -->
+            <section class="profile-card profile-wide" id="articlesSection" style="display:none;">
+                <h2 class="profile-card-title">Články <span id="profileArticlesCount"></span></h2>
+                <div class="profile-posts-list" id="profileArticlesList"></div>
+                <button type="button" class="profile-btn small" id="articlesExpandBtn" style="display:none;">Zobrazit všechny</button>
+            </section>
+
+            <!-- ===== Comments (always visible) ===== -->
+            <section class="profile-card profile-wide" id="commentsSection">
+                <h2 class="profile-card-title">Komentáře <span id="profileCommentsCount"></span></h2>
+                <div class="profile-comments-list" id="profileCommentsList"></div>
+                <div class="field-hint" id="profileCommentsNote" style="display:none;"></div>
+            </section>
+        </div>
+    </main>
+
+    <!-- ===== Dialog: all anecdotes ===== -->
+    <div class="profile-modal-overlay" id="anecdotesModal">
+        <div class="profile-modal">
+            <button type="button" class="profile-modal-close" id="anecdotesModalClose" aria-label="Zavřít">&times;</button>
+            <h3 class="profile-modal-title" id="anecdotesModalTitle">Anekdoty</h3>
+            <div class="anecdotes-modal-grid" id="anecdotesModalGrid"></div>
+        </div>
+    </div>
+
+    <!-- ===== Dialog: edit profile ===== -->
+    <div class="profile-modal-overlay" id="editModal">
+        <div class="profile-modal narrow">
+            <button type="button" class="profile-modal-close" id="editModalClose" aria-label="Zavřít">&times;</button>
+            <h3 class="profile-modal-title">Upravit profil</h3>
+
+            <form id="profileForm" novalidate>
 
                 <div class="profile-form-group">
                     <label>Profilový obrázek</label>
                     <div class="avatar-edit-row">
-                        <div class="profile-avatar" id="avatarEditPreview"></div>
+                        <div class="profile-avatar large" id="avatarEditPreview"></div>
                         <div class="avatar-edit-actions">
                             <div class="avatar-edit-buttons">
                                 <label class="profile-btn" for="avatarFileInput">Vybrat obrázek</label>
@@ -133,15 +186,30 @@
                 </div>
 
                 <div class="profile-form-group">
-                    <label for="mcNameInput">Minecraft jméno</label>
+                    <label for="nicknameInput">Uživatelské jméno</label>
+                    <input type="text" id="nicknameInput" maxlength="30" autocomplete="off">
+                    <div class="field-hint">2–30 znaků. Zobrazuje se u článků, komentářů i na profilu.</div>
+                </div>
+
+                <div class="profile-form-group">
+                    <label for="mcNameInput">Minecraft nick</label>
                     <input type="text" id="mcNameInput" maxlength="16" placeholder="Steve" autocomplete="off">
-                    <div class="field-hint">3–16 znaků: písmena, čísla a podtržítko.</div>
+                    <div class="field-hint" id="mcNameHint"></div>
                 </div>
 
                 <div class="profile-form-group">
                     <label for="bioInput">O mně</label>
                     <textarea id="bioInput" maxlength="300" placeholder="Napište něco o sobě..."></textarea>
                     <div class="field-hint"><span id="bioCounter">0</span>/300</div>
+                </div>
+
+                <div class="profile-form-group">
+                    <label>Barva profilu</label>
+                    <div class="color-swatches" id="colorSwatches"></div>
+                    <div class="color-custom-row">
+                        <label for="profileColorInput">Vlastní barva</label>
+                        <input type="color" id="profileColorInput" value="#0066cc">
+                    </div>
                 </div>
 
                 <div class="profile-form-error" id="profileFormError"></div>
@@ -151,30 +219,8 @@
                     <button type="button" class="profile-btn" id="profileCancelBtn">Zrušit</button>
                 </div>
             </form>
-        </section>
-
-                <!-- Articles and anecdotes written by this user -->
-        <section class="profile-posts" id="profilePostsSection" style="display:none;">
-            <div class="profile-posts-grid">
-                <div>
-                    <h3 class="profile-posts-column-title">Články <span id="profileArticlesCount"></span></h3>
-                    <div class="profile-posts-list" id="profileArticlesList"></div>
-                </div>
-
-                <div>
-                    <h3 class="profile-posts-column-title">Anekdoty <span id="profileAnecdotesCount"></span></h3>
-                    <div class="profile-posts-list" id="profileAnecdotesList"></div>
-                </div>
-            </div>
-        </section>
-
-                <!-- Comments written by this user -->
-        <section class="profile-posts" id="profileCommentsSection" style="display:none;">
-            <h2 class="profile-posts-title">Komentáře <span id="profileCommentsCount"></span></h2>
-            <div class="profile-comments-list" id="profileCommentsList"></div>
-            <div class="field-hint" id="profileCommentsNote" style="display:none;"></div>
-        </section>
-    </main>
+        </div>
+    </div>
 
     <footer>
         <div class="container">
@@ -230,6 +276,7 @@
         const db = firebase.firestore();
         const storage = firebase.storage();
     </script>
+    <script src="scripts/ads.js"></script>
     <script src="scripts/profile.js"></script>
     <script src="scripts/auth.js"></script>
 </body>

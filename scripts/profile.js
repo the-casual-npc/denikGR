@@ -1,18 +1,43 @@
 // scripts/profile.js
-// Profile page: shows any user's profile (?uid=...), lets the owner edit their own,
-// and shows placeholder values when nobody is logged in (or with ?demo).
+// Profile page: shows any user's profile (?uid=...) and lets the owner edit their own.
 //
-// Data: users/<uid> -> { nickname, minecraftName, bio, photoURL }
+// Data: users/<uid> -> { nickname, minecraftName, bio, photoURL, profileColor, verified }
 // Pictures: Storage at profiles/<uid>/avatar_<timestamp>.png
 
 /* ==========================================================================
    1. CONFIGURATION
    ========================================================================== */
-const BIO_MAX_LENGTH = 300;                      // keep in sync with the Firestore rules
-const MC_NAME_PATTERN = /^[A-Za-z0-9_-]{3,16}$/;  // valid Minecraft Java usernames
-const AVATAR_SIZE = 256;                         // pictures are cropped to AVATAR_SIZE x AVATAR_SIZE px
+const BIO_MAX_LENGTH = 300;                       // keep in sync with the Firestore rules
+const NICKNAME_MIN_LENGTH = 2;
+const NICKNAME_MAX_LENGTH = 30;
+const MC_NAME_PATTERN = /^[A-Za-z0-9_-]{3,16}$/;  // valid Minecraft usernames
+const COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;        // profile colors are stored as #rrggbb
+const AVATAR_SIZE = 256;                          // pictures are cropped to AVATAR_SIZE x AVATAR_SIZE px
 
-// Shown when nobody is logged in and no ?uid= is given (or with ?demo in the address)
+const ANECDOTE_PREVIEW_COUNT = 6;  // thumbnails in the profile window; more -> "show all" button
+const ARTICLE_PREVIEW_COUNT = 5;   // article rows shown while packed; more -> expandable
+const MAX_PROFILE_COMMENTS = 20;   // only the newest N comments are shown
+
+// Texts you may want to rewrite
+const TEXT_NO_BIO = 'Zatím žádné bio.';
+const TEXT_NO_COMMENTS = 'Tento uživatel zatím nenapsal žádné komentáře.';
+const TEXT_COMMENTS_LOADING = 'Načítám komentáře...';
+const TEXT_COMMENTS_ERROR = 'Komentáře se nepodařilo načíst.';
+
+// Colors offered in the editor (the "default" swatch is added automatically)
+const PROFILE_COLORS = [
+    { name: 'Červená',   value: '#d94040' },
+    { name: 'Oranžová',  value: '#e08a1e' },
+    { name: 'Zelená',    value: '#2e9e55' },
+    { name: 'Tyrkysová', value: '#1f9d9d' },
+    { name: 'Fialová',   value: '#8a4fd6' },
+    { name: 'Růžová',    value: '#d6489a' },
+    { name: 'Hnědá',     value: '#8b5a2b' },
+    { name: 'Šedá',      value: '#6b7280' }
+];
+const DEFAULT_CUSTOM_COLOR = '#0066cc';
+
+const POST_PLACEHOLDER_IMAGE = 'https://picsum.photos/100/100';
 
 const AVATAR_PLACEHOLDER_SVG = `
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -24,13 +49,17 @@ const AVATAR_PLACEHOLDER_SVG = `
    2. STATE & SMALL HELPERS
    ========================================================================== */
 let profileState = {
-    uid: null,            // whose profile is shown (null = placeholder profile)
-    isDemo: false,
+    uid: null,            // whose profile is shown
     isOwner: false,
-    profile: {},          // { nickname, minecraftName, bio, photoURL }
+    profile: {},          // { nickname, minecraftName, bio, photoURL, profileColor, verified }
     pendingAvatar: null,  // { blob, previewUrl } chosen in the form but not saved yet
-    removeAvatar: false
+    removeAvatar: false,
+    editColor: ''         // color currently picked in the editor ('' = default)
 };
+
+let loadedArticles = [];
+let loadedAnecdotes = [];
+let articlesExpanded = false;
 
 const byId = (id) => document.getElementById(id);
 
@@ -38,13 +67,7 @@ const byId = (id) => document.getElementById(id);
 function showOnly(section) {
     byId('profileLoading').style.display = section === 'loading' ? 'flex' : 'none';
     byId('profileMessage').style.display = section === 'message' ? 'block' : 'none';
-    byId('profileCard').style.display = section === 'card' ? 'block' : 'none';
-
-    if (section !== 'card') {
-        byId('profileDemoBanner').style.display = 'none';
-        byId('profilePostsSection').style.display = 'none';
-        byId('profileCommentsSection').style.display = 'none';
-    }
+    byId('profilePage').style.display = section === 'page' ? 'block' : 'none';
 }
 
 function showMessage(text) {
@@ -68,6 +91,22 @@ function showStatus(text) {
     statusTimer = setTimeout(() => { box.style.display = 'none'; }, 3500);
 }
 
+function formatPostDate(timestamp) {
+    return timestamp ? timestamp.toDate().toLocaleDateString('cs-CZ') : '';
+}
+
+function formatPostDateTime(timestamp) {
+    return timestamp
+        ? timestamp.toDate().toLocaleString('cs-CZ', { dateStyle: 'medium', timeStyle: 'short' })
+        : '';
+}
+
+const postMillis = (timestamp) => timestamp ? timestamp.toMillis() : 0;
+
+function sortPostsNewestFirst(docs) {
+    return [...docs].sort((a, b) => postMillis(b.data().date) - postMillis(a.data().date));
+}
+
 // Profile picture, or the placeholder silhouette when there is none (or it fails to load)
 function renderAvatar(container, url) {
     container.innerHTML = '';
@@ -82,6 +121,25 @@ function renderAvatar(container, url) {
     img.alt = 'Profilový obrázek';
     img.addEventListener('error', () => { container.innerHTML = AVATAR_PLACEHOLDER_SVG; });
     container.appendChild(img);
+}
+
+// Image, or a muted first-frame preview for videos
+function createThumbElement(media, className) {
+    let el;
+    if (media.type === 'video') {
+        el = document.createElement('video');
+        el.src = media.url + '#t=0.1';
+        el.muted = true;
+        el.preload = 'metadata';
+        el.playsInline = true;
+    } else {
+        el = document.createElement('img');
+        el.src = media.url;
+        el.alt = '';
+        el.loading = 'lazy';
+    }
+    el.className = className;
+    return el;
 }
 
 // Best-effort delete of an old picture in Storage (never throws)
@@ -131,35 +189,622 @@ function cropToSquareBlob(file, size) {
     });
 }
 
-/* ==========================================================================
-   7. COMMENTS WRITTEN BY THIS USER
-   ========================================================================== */
-const MAX_PROFILE_COMMENTS = 20; // only the newest N comments are shown
-
-// Placeholder rows for the demo profile
-const DEMO_COMMENTS = [
-    {
-        title: 'Obchodní dům v plamenech kvůli creeperovi',
-        text: 'Tohle jsem viděl na vlastní oči, creeper to měl namířeno přímo na vchod!',
-        date: '12. 10. 2026 19:20',
-        thumbUrl: 'https://picsum.photos/seed/denik-a1/100/100'
-    },
-    {
-        title: 'Nová zastávka na lince do Netheru',
-        text: 'Konečně! Doufám, že budou jezdit i v noci, protože ráno je tam pořád plno.',
-        date: '8. 10. 2026 8:15',
-        thumbUrl: 'https://picsum.photos/seed/denik-a2/100/100'
+// The profile color is the CSS variable --profile-accent ('' = back to the site blue)
+function applyProfileColor(color) {
+    const root = document.documentElement;
+    if (COLOR_PATTERN.test(color || '')) {
+        root.style.setProperty('--profile-accent', color);
+    } else {
+        root.style.removeProperty('--profile-accent');
     }
-];
+}
 
-const postMillis = (timestamp) => timestamp ? timestamp.toMillis() : 0;
+/* ==========================================================================
+   3. DIALOGS & FULLSCREEN MEDIA
+   ========================================================================== */
+function updateScrollLock() {
+    const anyOpen = document.querySelector('.profile-modal-overlay.active, .lightbox-overlay.active');
+    document.body.classList.toggle('modal-open', !!anyOpen);
+}
+
+function openModal(id) {
+    byId(id).classList.add('active');
+    updateScrollLock();
+}
+
+function closeModal(id) {
+    byId(id).classList.remove('active');
+    updateScrollLock();
+}
+
+function ensureLightbox() {
+    let lightbox = byId('globalLightbox');
+    if (lightbox) return lightbox;
+
+    lightbox = document.createElement('div');
+    lightbox.className = 'lightbox-overlay';
+    lightbox.id = 'globalLightbox';
+    lightbox.innerHTML = `
+        <button class="lightbox-close" id="closeLightboxBtn" aria-label="Zavřít">&times;</button>
+        <div class="lightbox-content" id="lightboxContentTarget"></div>
+    `;
+    document.body.appendChild(lightbox);
+
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox || e.target.id === 'closeLightboxBtn') closeMediaFullscreen();
+    });
+
+    return lightbox;
+}
+
+function openMediaFullscreen(mediaUrl, mediaType) {
+    const lightbox = ensureLightbox();
+    const container = byId('lightboxContentTarget');
+    container.innerHTML = '';
+
+    const media = document.createElement(mediaType === 'video' ? 'video' : 'img');
+    media.src = mediaUrl;
+    if (mediaType === 'video') {
+        media.controls = true;
+        media.autoplay = true;
+    } else {
+        media.alt = 'Zvětšený náhled';
+    }
+    container.appendChild(media);
+
+    lightbox.classList.add('active');
+    updateScrollLock();
+}
+
+function closeMediaFullscreen() {
+    const lightbox = byId('globalLightbox');
+    if (!lightbox) return;
+
+    lightbox.classList.remove('active');
+    updateScrollLock();
+
+    // Wait for the fade-out, then drop the media (this also stops a playing video)
+    setTimeout(() => {
+        if (!lightbox.classList.contains('active')) {
+            byId('lightboxContentTarget').innerHTML = '';
+        }
+    }, 300);
+}
+
+// Escape closes the top-most layer first
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+
+    const lightbox = byId('globalLightbox');
+    if (lightbox && lightbox.classList.contains('active')) {
+        closeMediaFullscreen();
+    } else if (byId('anecdotesModal').classList.contains('active')) {
+        closeModal('anecdotesModal');
+    } else if (byId('editModal').classList.contains('active')) {
+        closeEditor();
+    }
+});
+
+/* ==========================================================================
+   4. LOADING A PROFILE
+   ========================================================================== */
+// Re-runs whenever the login state is known or changes (e.g. login through the modal)
+firebase.auth().onAuthStateChanged((user) => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedUid = params.get('uid');
+    const targetUid = requestedUid || (user ? user.uid : null);
+
+    if (!targetUid) {
+        window.location.href = "index.html";
+    } else {
+        loadProfile(targetUid, user);
+    }
+});
+
+async function loadProfile(uid, user) {
+    showOnly('loading');
+
+    try {
+        const snap = await db.collection('users').doc(uid).get();
+        const isOwner = !!user && user.uid === uid;
+
+        // A missing document is only fine for the owner (it gets created on the first save)
+        if (!snap.exists && !isOwner) {
+            showMessage('Profil nebyl nalezen.');
+            return;
+        }
+
+        const data = snap.exists ? snap.data() : {};
+        const fallbackName = isOwner
+            ? (user.displayName || (user.email ? user.email.split('@')[0] : 'Uživatel'))
+            : 'Uživatel';
+
+        profileState = {
+            uid: uid,
+            isOwner: isOwner,
+            profile: {
+                nickname: data.nickname || fallbackName,
+                minecraftName: data.minecraftName || '',
+                bio: data.bio || '',
+                photoURL: data.photoURL || '',
+                profileColor: COLOR_PATTERN.test(data.profileColor || '') ? data.profileColor : '',
+                verified: data.verified === true
+            },
+            pendingAvatar: null,
+            removeAvatar: false,
+            editColor: ''
+        };
+
+        renderProfile();
+        loadPostsSection(uid);
+        loadCommentsSection(uid);
+
+    } catch (err) {
+        console.error("Failed to load the profile:", err);
+        showMessage('Profil se nepodařilo načíst.');
+    }
+}
+
+/* ==========================================================================
+   5. VIEW MODE
+   ========================================================================== */
+// TODO (later): draw the player's Minecraft skin into the container.
+// Called for verified players only; for now it intentionally renders nothing.
+function renderSkin(container, profile) {
+    container.innerHTML = '';
+}
+
+function renderProfile() {
+    const { profile, isOwner } = profileState;
+
+    document.title = `${profile.nickname} | Deník.GR`;
+    applyProfileColor(profile.profileColor);
+
+    renderAvatar(byId('profileAvatar'), profile.photoURL);
+    byId('profileName').textContent = profile.nickname;
+
+    // Minecraft nick
+    const mcRow = byId('profileMc');
+    mcRow.innerHTML = '';
+    if (profile.minecraftName) {
+        const strong = document.createElement('strong');
+        strong.textContent = profile.minecraftName;
+        mcRow.append('Minecraft nick: ', strong);
+    }
+
+    // Bio
+    const bioEl = byId('profileBio');
+    if (profile.bio) {
+        bioEl.textContent = profile.bio;
+        bioEl.classList.remove('profile-muted');
+    } else {
+        bioEl.textContent = TEXT_NO_BIO;
+        bioEl.classList.add('profile-muted');
+    }
+
+    byId('profileEditBtn').style.display = isOwner ? 'inline-flex' : 'none';
+
+    // Skin window: verified players only. Without it the other two columns move to the middle.
+    byId('skinColumn').style.display = profile.verified ? '' : 'none';
+    byId('profilePage').classList.toggle('no-skin', !profile.verified);
+    if (profile.verified) renderSkin(byId('profileSkin'), profile);
+
+    showOnly('page');
+}
+
+/* ==========================================================================
+   6. EDIT DIALOG
+   ========================================================================== */
+function discardPendingAvatar() {
+    if (profileState.pendingAvatar) {
+        URL.revokeObjectURL(profileState.pendingAvatar.previewUrl);
+    }
+    profileState.pendingAvatar = null;
+}
+
+function renderColorPicker() {
+    const box = byId('colorSwatches');
+    box.innerHTML = '';
+
+    [{ name: 'Výchozí', value: '' }, ...PROFILE_COLORS].forEach((option) => {
+        const swatch = document.createElement('button');
+        swatch.type = 'button';
+        swatch.className = 'color-swatch' + (option.value === '' ? ' default' : '');
+        swatch.title = option.name;
+        swatch.setAttribute('aria-label', option.name);
+        swatch.dataset.value = option.value;
+        if (option.value) swatch.style.background = option.value;
+        swatch.addEventListener('click', () => selectColor(option.value));
+        box.appendChild(swatch);
+    });
+
+    byId('profileColorInput').value = profileState.editColor || DEFAULT_CUSTOM_COLOR;
+    updateColorSelection();
+}
+
+function updateColorSelection() {
+    const current = profileState.editColor.toLowerCase();
+    byId('colorSwatches').querySelectorAll('.color-swatch').forEach((swatch) => {
+        swatch.classList.toggle('selected', swatch.dataset.value.toLowerCase() === current);
+    });
+}
+
+// Picking a color previews it on the whole page right away
+function selectColor(value) {
+    profileState.editColor = value;
+    applyProfileColor(value);
+    byId('profileColorInput').value = value || DEFAULT_CUSTOM_COLOR;
+    updateColorSelection();
+}
+
+function openEditor() {
+    const { profile } = profileState;
+
+    discardPendingAvatar();
+    profileState.removeAvatar = false;
+    profileState.editColor = profile.profileColor;
+
+    byId('nicknameInput').value = profile.nickname;
+
+    // Verified players can't change their Minecraft nick
+    const mcInput = byId('mcNameInput');
+    mcInput.value = profile.minecraftName;
+    mcInput.disabled = profile.verified;
+    byId('mcNameHint').textContent = profile.verified
+        ? 'Ověřeným hráčům nelze Minecraft nick měnit.'
+        : '3-16 znaků: A-Z, 0-9, "_", "-"';
+
+    byId('bioInput').value = profile.bio;
+    byId('bioCounter').textContent = profile.bio.length;
+    byId('profileFormError').textContent = '';
+    renderAvatar(byId('avatarEditPreview'), profile.photoURL);
+    renderColorPicker();
+
+    openModal('editModal');
+}
+
+function closeEditor() {
+    discardPendingAvatar();
+    profileState.removeAvatar = false;
+    applyProfileColor(profileState.profile.profileColor); // drop an unsaved color preview
+    closeModal('editModal');
+}
+
+byId('profileEditBtn').addEventListener('click', openEditor);
+byId('profileCancelBtn').addEventListener('click', closeEditor);
+byId('editModalClose').addEventListener('click', closeEditor);
+
+byId('bioInput').addEventListener('input', (e) => {
+    byId('bioCounter').textContent = e.target.value.length;
+});
+
+byId('profileColorInput').addEventListener('input', (e) => selectColor(e.target.value));
+
+// Choosing a picture: crop it locally and show a preview (uploaded only on save)
+byId('avatarFileInput').addEventListener('change', async (e) => {
+    const input = e.target;
+    const file = input.files[0];
+    if (!file) return;
+
+    byId('profileFormError').textContent = '';
+
+    try {
+        const blob = await cropToSquareBlob(file, AVATAR_SIZE);
+        discardPendingAvatar();
+        profileState.pendingAvatar = { blob: blob, previewUrl: URL.createObjectURL(blob) };
+        profileState.removeAvatar = false;
+        renderAvatar(byId('avatarEditPreview'), profileState.pendingAvatar.previewUrl);
+    } catch (err) {
+        console.error("Profile picture processing failed:", err);
+        byId('profileFormError').textContent = 'Obrázek se nepodařilo načíst. Zkuste jiný soubor.';
+    }
+
+    input.value = ''; // lets the same file be chosen again
+});
+
+byId('avatarRemoveBtn').addEventListener('click', () => {
+    discardPendingAvatar();
+    profileState.removeAvatar = true;
+    renderAvatar(byId('avatarEditPreview'), '');
+});
+
+byId('profileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const { profile } = profileState;
+    const errorBox = byId('profileFormError');
+    const saveBtn = byId('profileSaveBtn');
+
+    const nickname = byId('nicknameInput').value.trim();
+    const minecraftName = profile.verified ? profile.minecraftName : byId('mcNameInput').value.trim();
+    const bio = byId('bioInput').value.trim();
+    const color = profileState.editColor;
+
+    errorBox.textContent = '';
+
+    if (nickname.length < NICKNAME_MIN_LENGTH || nickname.length > NICKNAME_MAX_LENGTH) {
+        errorBox.textContent = `Uživatelské jméno musí mít ${NICKNAME_MIN_LENGTH}-${NICKNAME_MAX_LENGTH} znaků.`;
+        return;
+    }
+    if (!profile.verified && minecraftName && !MC_NAME_PATTERN.test(minecraftName)) {
+        errorBox.textContent = 'Neplatný nick (3-16 znaků, A-Z, 0-9, "_", "-")';
+        return;
+    }
+    if (bio.length > BIO_MAX_LENGTH) {
+        errorBox.textContent = `Bio může mít nejvýše ${BIO_MAX_LENGTH} znaků.`;
+        return;
+    }
+    if (color && !COLOR_PATTERN.test(color)) {
+        errorBox.textContent = 'Neplatná barva profilu.';
+        return;
+    }
+
+    const user = firebase.auth().currentUser;
+    if (!user || user.uid !== profileState.uid) {
+        errorBox.textContent = 'Pro uložení profilu se musíte přihlásit.';
+        return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Ukládám...';
+
+    try {
+        const oldUrl = profile.photoURL;
+        let newUrl = oldUrl;
+
+        if (profileState.pendingAvatar) {
+            const fileRef = storage.ref(`profiles/${user.uid}/avatar_${Date.now()}.png`);
+            const snapshot = await fileRef.put(profileState.pendingAvatar.blob, { contentType: 'image/png' });
+            newUrl = await snapshot.ref.getDownloadURL();
+        } else if (profileState.removeAvatar) {
+            newUrl = '';
+        }
+
+        // merge: only touches these fields (verified etc. stay as they are)
+        const changes = {
+            nickname: nickname,
+            bio: bio,
+            photoURL: newUrl ? newUrl : firebase.firestore.FieldValue.delete(),
+            profileColor: color ? color : firebase.firestore.FieldValue.delete()
+        };
+        if (!profile.verified) changes.minecraftName = minecraftName;
+
+        await db.collection('users').doc(user.uid).set(changes, { merge: true });
+
+        if (oldUrl && oldUrl !== newUrl) deleteOldAvatar(oldUrl);
+
+        discardPendingAvatar();
+        profileState.removeAvatar = false;
+        profileState.profile = { ...profile, nickname, minecraftName, bio, photoURL: newUrl, profileColor: color };
+
+        closeModal('editModal');
+        renderProfile();
+
+        // Keep the name in the navbar in sync without a reload
+        const menuBtn = byId('userMenuBtn');
+        if (menuBtn) menuBtn.textContent = `${nickname} ▾`;
+
+        showStatus('Profil byl uložen.');
+
+    } catch (err) {
+        console.error("Saving the profile failed:", err);
+        errorBox.textContent = err.code === 'permission-denied'
+            ? 'Nemáte oprávnění uložit tento profil.'
+            : 'Uložení se nezdařilo. Zkuste to prosím znovu.';
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Uložit změny';
+    }
+});
+
+/* ==========================================================================
+   7. ARTICLES & ANECDOTES OF THIS USER
+   ========================================================================== */
+// Fetches the posts of one user and renders them (the profile itself is already visible)
+async function loadPostsSection(uid) {
+    loadedArticles = [];
+    loadedAnecdotes = [];
+    articlesExpanded = false;
+    renderArticles();
+    renderAnecdotes();
+
+    try {
+        // Equality-only queries need no composite index; sorting happens below
+        const [articleSnap, anecdoteSnap] = await Promise.all([
+            db.collection('articles').where('authorUid', '==', uid).get(),
+            db.collection('anecdotes').where('authorUid', '==', uid).get()
+        ]);
+
+        if (profileState.uid !== uid) return; // another profile was opened in the meantime
+
+        loadedArticles = sortPostsNewestFirst(articleSnap.docs).map((doc) => {
+            const data = doc.data();
+            return {
+                title: data.title || 'Bez názvu',
+                sub: [data.category, formatPostDate(data.date)].filter(Boolean).join(' • '),
+                thumb: { type: 'image', url: data.coverImage || POST_PLACEHOLDER_IMAGE },
+                href: `article.html?id=${encodeURIComponent(doc.id)}`
+            };
+        });
+
+        loadedAnecdotes = sortPostsNewestFirst(anecdoteSnap.docs)
+            .map((doc) => {
+                const data = doc.data();
+                return {
+                    thumb: { type: data.type || 'image', url: data.url },
+                    dateText: formatPostDateTime(data.date) || 'Neznámé datum'
+                };
+            })
+            .filter(a => a.thumb.url);
+
+        renderArticles();
+        renderAnecdotes();
+
+    } catch (err) {
+        // The profile itself still works, so these sections simply stay hidden
+        console.error("Failed to load the posts of this user:", err);
+    }
+}
+
+/* ---- Articles: packed to ARTICLE_PREVIEW_COUNT rows, expandable in place ---- */
+function renderArticles() {
+    const section = byId('articlesSection');
+    const total = loadedArticles.length;
+
+    if (total === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    const list = byId('profileArticlesList');
+    list.innerHTML = '';
+
+    const visible = articlesExpanded ? loadedArticles : loadedArticles.slice(0, ARTICLE_PREVIEW_COUNT);
+    visible.forEach(article => list.appendChild(buildPostRow(article)));
+
+    byId('profileArticlesCount').textContent = `(${total})`;
+
+    const btn = byId('articlesExpandBtn');
+    if (total > ARTICLE_PREVIEW_COUNT) {
+        btn.textContent = articlesExpanded ? 'Sbalit' : `Zobrazit všechny (${total})`;
+        btn.style.display = 'inline-flex';
+    } else {
+        btn.style.display = 'none';
+    }
+
+    section.style.display = 'block';
+}
+
+byId('articlesExpandBtn').addEventListener('click', () => {
+    articlesExpanded = !articlesExpanded;
+    renderArticles();
+});
+
+// One row: thumbnail + title + small subtitle (a link to the article)
+function buildPostRow({ thumb, title, sub, href }) {
+    const row = document.createElement(href ? 'a' : 'div');
+    row.className = 'profile-post-row' + (href ? ' clickable' : '');
+    if (href) row.href = href;
+
+    const info = document.createElement('div');
+    info.className = 'profile-post-info';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'profile-post-title';
+    titleEl.textContent = title;
+
+    const subEl = document.createElement('div');
+    subEl.className = 'profile-post-sub';
+    subEl.textContent = sub;
+
+    info.append(titleEl, subEl);
+    row.append(createThumbElement(thumb, 'profile-post-thumb'), info);
+    return row;
+}
+
+/* ---- Anecdotes: thumbnails in the window, all of them in a dialog ---- */
+function renderAnecdotes() {
+    const card = byId('anecdotesCard');
+    const total = loadedAnecdotes.length;
+
+    if (total === 0) {
+        card.style.display = 'none'; // the ad below moves up into its place
+        return;
+    }
+
+    const grid = byId('anecdotePreviewGrid');
+    grid.innerHTML = '';
+    loadedAnecdotes.slice(0, ANECDOTE_PREVIEW_COUNT)
+        .forEach(anecdote => grid.appendChild(buildAnecdoteTile(anecdote, false)));
+
+    byId('profileAnecdotesCount').textContent = `(${total})`;
+
+    const btn = byId('anecdotesExpandBtn');
+    btn.textContent = `Zobrazit všechny (${total})`;
+    btn.style.display = total > ANECDOTE_PREVIEW_COUNT ? 'inline-flex' : 'none';
+
+    card.style.display = 'block';
+}
+
+// Square thumbnail; click = fullscreen. withCaption adds the date underneath (dialog).
+function buildAnecdoteTile(anecdote, withCaption) {
+    const tile = document.createElement('div');
+    tile.className = 'anecdote-tile';
+    tile.tabIndex = 0;
+    tile.setAttribute('role', 'button');
+    tile.title = anecdote.dateText;
+
+    const media = document.createElement('div');
+    media.className = 'anecdote-tile-media';
+    media.appendChild(createThumbElement(anecdote.thumb, 'anecdote-tile-thumb'));
+
+    if (anecdote.thumb.type === 'video') {
+        const badge = document.createElement('span');
+        badge.className = 'anecdote-tile-play';
+        badge.textContent = '▶';
+        media.appendChild(badge);
+    }
+    tile.appendChild(media);
+
+    if (withCaption) {
+        const caption = document.createElement('div');
+        caption.className = 'anecdote-tile-caption';
+        caption.textContent = anecdote.dateText;
+        tile.appendChild(caption);
+    }
+
+    const open = () => openMediaFullscreen(anecdote.thumb.url, anecdote.thumb.type);
+    tile.addEventListener('click', open);
+    tile.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            open();
+        }
+    });
+
+    return tile;
+}
+
+function openAnecdotesModal() {
+    byId('anecdotesModalTitle').textContent =
+        `Anekdoty uživatele ${profileState.profile.nickname} (${loadedAnecdotes.length})`;
+
+    const grid = byId('anecdotesModalGrid');
+    grid.innerHTML = '';
+    loadedAnecdotes.forEach(anecdote => grid.appendChild(buildAnecdoteTile(anecdote, true)));
+
+    openModal('anecdotesModal');
+}
+
+byId('anecdotesExpandBtn').addEventListener('click', openAnecdotesModal);
+byId('anecdotesModalClose').addEventListener('click', () => closeModal('anecdotesModal'));
+byId('anecdotesModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal('anecdotesModal'); // click on the backdrop
+});
+
+/* ==========================================================================
+   8. COMMENTS WRITTEN BY THIS USER
+   ========================================================================== */
+// Shows a single message instead of the list (loading, empty, error)
+function setCommentsMessage(text) {
+    const list = byId('profileCommentsList');
+    list.innerHTML = '';
+
+    const message = document.createElement('div');
+    message.className = 'profile-empty';
+    message.textContent = text;
+    list.appendChild(message);
+
+    byId('profileCommentsCount').textContent = '';
+    byId('profileCommentsNote').style.display = 'none';
+}
 
 async function loadCommentsSection(uid) {
-    byId('profileCommentsSection').style.display = 'none';
+    setCommentsMessage(TEXT_COMMENTS_LOADING);
 
     try {
         // Collection group query over every article's "comments" subcollection.
-        // Needs the extra Firestore rule and the single-field index from the setup notes.
+        // Needs the extra Firestore rule and the single-field index from the earlier setup notes.
         const snap = await db.collectionGroup('comments').where('uid', '==', uid).get();
         if (profileState.uid !== uid) return; // another profile was opened in the meantime
 
@@ -197,14 +842,13 @@ async function loadCommentsSection(uid) {
     } catch (err) {
         // Most likely the index is still missing; the rest of the profile works fine
         console.error("Failed to load the comments of this user:", err);
+        setCommentsMessage(TEXT_COMMENTS_ERROR);
     }
 }
 
 function renderProfileComments(rows, total) {
-    const section = byId('profileCommentsSection');
-
     if (rows.length === 0) {
-        section.style.display = 'none';
+        setCommentsMessage(TEXT_NO_COMMENTS);
         return;
     }
 
@@ -221,8 +865,6 @@ function renderProfileComments(rows, total) {
     } else {
         note.style.display = 'none';
     }
-
-    section.style.display = 'block';
 }
 
 // One row: article cover + article title + the comment text + date
@@ -255,470 +897,4 @@ function buildProfileCommentRow(row) {
     info.append(title, text, date);
     el.append(thumb, info);
     return el;
-}
-
-/* ==========================================================================
-   3. LOADING A PROFILE
-   ========================================================================== */
-// Re-runs whenever the login state is known or changes (e.g. login through the modal)
-firebase.auth().onAuthStateChanged((user) => {
-    const params = new URLSearchParams(window.location.search);
-    const requestedUid = params.get('uid');
-    const targetUid = requestedUid || (user ? user.uid : null);
-
-    if (!targetUid) {
-        window.location.href = "index.html";
-    } else {
-        loadProfile(targetUid, user);
-    }
-});
-
-async function loadProfile(uid, user) {
-    showOnly('loading');
-
-    try {
-        const snap = await db.collection('users').doc(uid).get();
-        const isOwner = !!user && user.uid === uid;
-
-        // A missing document is only fine for the owner (it gets created on the first save)
-        if (!snap.exists && !isOwner) {
-            showMessage('Profil nebyl nalezen.');
-            return;
-        }
-
-        const data = snap.exists ? snap.data() : {};
-        const fallbackName = isOwner
-            ? (user.displayName || (user.email ? user.email.split('@')[0] : 'Uživatel'))
-            : 'Uživatel';
-
-        profileState = {
-            uid: uid,
-            isDemo: false,
-            isOwner: isOwner,
-            profile: {
-                nickname: data.nickname || fallbackName,
-                minecraftName: data.minecraftName || '',
-                bio: data.bio || '',
-                photoURL: data.photoURL || ''
-            },
-            pendingAvatar: null,
-            removeAvatar: false
-        };
-        renderProfile();
-        loadPostsSection(uid);
-        loadCommentsSection(uid);
-
-    } catch (err) {
-        console.error("Failed to load the profile:", err);
-        showMessage('Profil se nepodařilo načíst.');
-    }
-}
-
-/* ==========================================================================
-   4. VIEW MODE
-   ========================================================================== */
-function renderProfile() {
-    const { profile, isOwner, isDemo } = profileState;
-    const canEdit = isOwner || isDemo;
-
-    document.title = `${profile.nickname} | Deník.GR`;
-    byId('profileDemoBanner').style.display = isDemo ? 'block' : 'none';
-
-    renderAvatar(byId('profileAvatar'), profile.photoURL);
-    byId('profileName').textContent = profile.nickname;
-
-    // Minecraft name
-    const mcRow = byId('profileMc');
-    mcRow.innerHTML = '';
-    if (profile.minecraftName) {
-        const strong = document.createElement('strong');
-        strong.textContent = profile.minecraftName;
-        mcRow.append('Minecraft nick: ', strong);
-    } else if (canEdit) {
-        const hint = document.createElement('span');
-        hint.className = 'profile-muted';
-        hint.textContent = '';
-        mcRow.appendChild(hint);
-    }
-
-    // Bio
-    const bioEl = byId('profileBio');
-    if (profile.bio) {
-        bioEl.textContent = profile.bio;
-        bioEl.classList.remove('profile-muted');
-    } else {
-        bioEl.textContent = 'Zatím žádné bio.'
-        bioEl.classList.add('profile-muted');
-    }
-
-    byId('profileEditBtn').style.display = canEdit ? 'inline-flex' : 'none';
-
-    byId('profileForm').style.display = 'none';
-    byId('profileView').style.display = 'flex';
-    showOnly('card');
-}
-
-/* ==========================================================================
-   5. EDIT MODE
-   ========================================================================== */
-function discardPendingAvatar() {
-    if (profileState.pendingAvatar) {
-        URL.revokeObjectURL(profileState.pendingAvatar.previewUrl);
-    }
-    profileState.pendingAvatar = null;
-}
-
-function openEditor() {
-    const { profile } = profileState;
-
-    discardPendingAvatar();
-    profileState.removeAvatar = false;
-
-    byId('mcNameInput').value = profile.minecraftName;
-    byId('bioInput').value = profile.bio;
-    byId('bioCounter').textContent = profile.bio.length;
-    byId('profileFormError').textContent = '';
-    renderAvatar(byId('avatarEditPreview'), profile.photoURL);
-
-    byId('profileView').style.display = 'none';
-    byId('profileForm').style.display = 'block';
-}
-
-function closeEditor() {
-    discardPendingAvatar();
-    profileState.removeAvatar = false;
-    byId('profileForm').style.display = 'none';
-    byId('profileView').style.display = 'flex';
-}
-
-byId('profileEditBtn').addEventListener('click', openEditor);
-byId('profileCancelBtn').addEventListener('click', closeEditor);
-
-byId('bioInput').addEventListener('input', (e) => {
-    byId('bioCounter').textContent = e.target.value.length;
-});
-
-// Choosing a picture: crop it locally and show a preview (uploaded only on save)
-byId('avatarFileInput').addEventListener('change', async (e) => {
-    const input = e.target;
-    const file = input.files[0];
-    if (!file) return;
-
-    byId('profileFormError').textContent = '';
-
-    try {
-        const blob = await cropToSquareBlob(file, AVATAR_SIZE);
-        discardPendingAvatar();
-        profileState.pendingAvatar = { blob: blob, previewUrl: URL.createObjectURL(blob) };
-        profileState.removeAvatar = false;
-        renderAvatar(byId('avatarEditPreview'), profileState.pendingAvatar.previewUrl);
-    } catch (err) {
-        console.error("Profile picture processing failed:", err);
-        byId('profileFormError').textContent = 'Obrázek se nepodařilo načíst. Zkuste jiný soubor.';
-    }
-
-    input.value = ''; // lets the same file be chosen again
-});
-
-byId('avatarRemoveBtn').addEventListener('click', () => {
-    discardPendingAvatar();
-    profileState.removeAvatar = true;
-    renderAvatar(byId('avatarEditPreview'), '');
-});
-
-byId('profileForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const errorBox = byId('profileFormError');
-    const saveBtn = byId('profileSaveBtn');
-    const minecraftName = byId('mcNameInput').value.trim();
-    const bio = byId('bioInput').value.trim();
-
-    errorBox.textContent = '';
-
-    if (minecraftName && !MC_NAME_PATTERN.test(minecraftName)) {
-        errorBox.textContent = 'Neplatný nick (3-16 znaků, A-Z, 0-9, "_", "-")';
-        return;
-    }
-    if (bio.length > BIO_MAX_LENGTH) {
-        errorBox.textContent = `Bio může mít nejvýše ${BIO_MAX_LENGTH} znaků.`;
-        return;
-    }
-
-    // Placeholder profile: apply the changes to the preview only, nothing is saved
-    if (profileState.isDemo) {
-        let photoURL = profileState.profile.photoURL;
-        if (profileState.pendingAvatar) {
-            photoURL = profileState.pendingAvatar.previewUrl;
-            profileState.pendingAvatar = null; // keep the preview URL alive for the page
-        } else if (profileState.removeAvatar) {
-            photoURL = '';
-        }
-
-        profileState.profile = { ...profileState.profile, minecraftName, bio, photoURL };
-        renderProfile();
-        showStatus('Změny byly použity pouze pro náhled (nic se neukládá).');
-        return;
-    }
-
-    const user = firebase.auth().currentUser;
-    if (!user || user.uid !== profileState.uid) {
-        errorBox.textContent = 'Pro uložení profilu se musíte přihlásit.';
-        return;
-    }
-
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Ukládám...';
-
-    try {
-        const oldUrl = profileState.profile.photoURL;
-        let newUrl = oldUrl;
-
-        if (profileState.pendingAvatar) {
-            const fileRef = storage.ref(`profiles/${user.uid}/avatar_${Date.now()}.png`);
-            const snapshot = await fileRef.put(profileState.pendingAvatar.blob, { contentType: 'image/png' });
-            newUrl = await snapshot.ref.getDownloadURL();
-        } else if (profileState.removeAvatar) {
-            newUrl = '';
-        }
-
-        // merge: only touches these fields (nickname etc. stay as they are)
-        await db.collection('users').doc(user.uid).set({
-            minecraftName: minecraftName,
-            bio: bio,
-            photoURL: newUrl ? newUrl : firebase.firestore.FieldValue.delete()
-        }, { merge: true });
-
-        if (oldUrl && oldUrl !== newUrl) deleteOldAvatar(oldUrl);
-
-        discardPendingAvatar();
-        profileState.profile = { ...profileState.profile, minecraftName, bio, photoURL: newUrl };
-        profileState.removeAvatar = false;
-        renderProfile();
-        showStatus('Profil byl uložen.');
-
-    } catch (err) {
-        console.error("Saving the profile failed:", err);
-        errorBox.textContent = err.code === 'permission-denied'
-            ? 'Nemáte oprávnění uložit tento profil.'
-            : 'Uložení se nezdařilo. Zkuste to prosím znovu.';
-    } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Uložit změny';
-    }
-});
-
-/* ==========================================================================
-   6. ARTICLES & ANECDOTES OF THIS USER
-   ========================================================================== */
-const POST_PLACEHOLDER_IMAGE = 'https://picsum.photos/100/100';
-
-// Placeholder rows for the demo profile (no database access)
-const DEMO_POSTS = {
-    articles: [
-        { title: 'Obchodní dům v plamenech kvůli creeperovi', sub: 'Aktuality • 12. 10. 2026', thumb: { type: 'image', url: 'https://picsum.photos/seed/denik-a1/100/100' } },
-        { title: 'Nová zastávka na lince do Netheru', sub: 'Doprava • 8. 10. 2026', thumb: { type: 'image', url: 'https://picsum.photos/seed/denik-a2/100/100' } },
-        { title: 'Otevření obchodu s diamantovým nářadím', sub: 'Obchody • 1. 10. 2026', thumb: { type: 'image', url: 'https://picsum.photos/seed/denik-a3/100/100' } }
-    ],
-    anecdotes: [
-        {
-            title: '10. 10. 2026 18:42', sub: 'Obrázek',
-            thumb: { type: 'image', url: 'https://picsum.photos/seed/denik-b1/100/100' },
-            onOpen: () => openMediaFullscreen('https://picsum.photos/seed/denik-b1/1200/800', 'image')
-        },
-        {
-            title: '3. 10. 2026 21:05', sub: 'Obrázek',
-            thumb: { type: 'image', url: 'https://picsum.photos/seed/denik-b2/100/100' },
-            onOpen: () => openMediaFullscreen('https://picsum.photos/seed/denik-b2/1200/800', 'image')
-        }
-    ]
-};
-
-function formatPostDate(timestamp) {
-    return timestamp ? timestamp.toDate().toLocaleDateString('cs-CZ') : '';
-}
-
-function formatPostDateTime(timestamp) {
-    return timestamp
-        ? timestamp.toDate().toLocaleString('cs-CZ', { dateStyle: 'medium', timeStyle: 'short' })
-        : '';
-}
-
-function sortPostsNewestFirst(docs) {
-    const millis = (doc) => doc.data().date ? doc.data().date.toMillis() : 0;
-    return [...docs].sort((a, b) => millis(b) - millis(a));
-}
-
-// Fetches the posts of one user and renders them (the profile itself is already visible)
-async function loadPostsSection(uid) {
-    byId('profilePostsSection').style.display = 'none';
-
-    try {
-        // Equality-only queries need no composite index; sorting happens below
-        const [articleSnap, anecdoteSnap] = await Promise.all([
-            db.collection('articles').where('authorUid', '==', uid).get(),
-            db.collection('anecdotes').where('authorUid', '==', uid).get()
-        ]);
-
-        if (profileState.uid !== uid) return; // another profile was opened in the meantime
-
-        const articles = sortPostsNewestFirst(articleSnap.docs).map((doc) => {
-            const data = doc.data();
-            return {
-                title: data.title || 'Bez názvu',
-                sub: [data.category, formatPostDate(data.date)].filter(Boolean).join(' • '),
-                thumb: { type: 'image', url: data.coverImage || POST_PLACEHOLDER_IMAGE },
-                href: `article.html?id=${encodeURIComponent(doc.id)}`
-            };
-        });
-
-        const anecdotes = sortPostsNewestFirst(anecdoteSnap.docs).map((doc) => {
-            const data = doc.data();
-            return {
-                title: formatPostDateTime(data.date) || 'Neznámé datum',
-                sub: data.type === 'video' ? 'Video' : 'Obrázek',
-                thumb: { type: data.type, url: data.url },
-                onOpen: () => openMediaFullscreen(data.url, data.type)
-            };
-        });
-
-        renderPostsSection(articles, anecdotes);
-
-    } catch (err) {
-        // The profile itself still works, so the section simply stays hidden
-        console.error("Failed to load the posts of this user:", err);
-    }
-}
-
-function renderPostsSection(articles, anecdotes) {
-    const section = byId('profilePostsSection');
-
-    if (articles.length === 0 && anecdotes.length === 0) {
-        section.style.display = 'none';
-        return;
-    }
-
-    fillPostList('profileArticlesList', 'profileArticlesCount', articles, 'Zatím žádné články.');
-    fillPostList('profileAnecdotesList', 'profileAnecdotesCount', anecdotes, 'Zatím žádné anekdoty.');
-    section.style.display = 'block';
-}
-
-function fillPostList(listId, countId, posts, emptyText) {
-    const list = byId(listId);
-    list.innerHTML = '';
-    byId(countId).textContent = posts.length ? `(${posts.length})` : '';
-
-    if (posts.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'profile-posts-empty';
-        empty.textContent = emptyText;
-        list.appendChild(empty);
-        return;
-    }
-
-    posts.forEach((post) => list.appendChild(buildPostRow(post)));
-}
-
-// One row: thumbnail + title + small subtitle.
-// href = opens a page, onOpen = runs a function (lightbox), neither = not clickable
-function buildPostRow({ thumb, title, sub, href, onOpen }) {
-    const row = document.createElement(href ? 'a' : 'div');
-    row.className = 'profile-post-row';
-
-    if (href) {
-        row.href = href;
-    } else if (onOpen) {
-        row.tabIndex = 0;
-        row.setAttribute('role', 'button');
-        row.addEventListener('click', onOpen);
-        row.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onOpen();
-            }
-        });
-    }
-    if (href || onOpen) row.classList.add('clickable');
-
-    // Thumbnail: image, or a muted first-frame preview for videos
-    let thumbEl;
-    if (thumb.type === 'video') {
-        thumbEl = document.createElement('video');
-        thumbEl.src = thumb.url + '#t=0.1';
-        thumbEl.muted = true;
-        thumbEl.preload = 'metadata';
-        thumbEl.playsInline = true;
-    } else {
-        thumbEl = document.createElement('img');
-        thumbEl.src = thumb.url;
-        thumbEl.alt = '';
-        thumbEl.loading = 'lazy';
-    }
-    thumbEl.className = 'profile-post-thumb';
-
-    const info = document.createElement('div');
-    info.className = 'profile-post-info';
-
-    const titleEl = document.createElement('div');
-    titleEl.className = 'profile-post-title';
-    titleEl.textContent = title;
-
-    const subEl = document.createElement('div');
-    subEl.className = 'profile-post-sub';
-    subEl.textContent = sub;
-
-    info.append(titleEl, subEl);
-    row.append(thumbEl, info);
-    return row;
-}
-
-/* ---- Lightbox (created on first use) ---- */
-function ensureLightbox() {
-    let lightbox = byId('globalLightbox');
-    if (lightbox) return lightbox;
-
-    lightbox = document.createElement('div');
-    lightbox.className = 'lightbox-overlay';
-    lightbox.id = 'globalLightbox';
-    lightbox.innerHTML = `
-        <button class="lightbox-close" id="closeLightboxBtn" aria-label="Zavřít">&times;</button>
-        <div class="lightbox-content" id="lightboxContentTarget"></div>
-    `;
-    document.body.appendChild(lightbox);
-
-    const close = () => {
-        lightbox.classList.remove('active');
-        setTimeout(() => {
-            if (!lightbox.classList.contains('active')) {
-                byId('lightboxContentTarget').innerHTML = '';
-            }
-        }, 300);
-    };
-
-    lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox || e.target.id === 'closeLightboxBtn') close();
-    });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') close();
-    });
-
-    return lightbox;
-}
-
-function openMediaFullscreen(mediaUrl, mediaType) {
-    const lightbox = ensureLightbox();
-    const container = byId('lightboxContentTarget');
-    container.innerHTML = '';
-
-    const media = document.createElement(mediaType === 'video' ? 'video' : 'img');
-    media.src = mediaUrl;
-    if (mediaType === 'video') {
-        media.controls = true;
-        media.autoplay = true;
-    } else {
-        media.alt = 'Zvětšený náhled';
-    }
-    container.appendChild(media);
-
-    lightbox.classList.add('active');
 }

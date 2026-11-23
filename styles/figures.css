@@ -1,0 +1,424 @@
+/* ==========================================================================
+   1. COLOR PALETTE
+   ========================================================================== */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #111111;
+    --border-color: #dddddd;
+    --card-bg: #fdfdfd;
+    --meta-text: #666666;
+    --panel-bg: #f8f9fa;
+    --link-hover: #0066cc;
+    --secondary-bg: #f9f9f9;
+}
+
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --border-color: #333333;
+    --card-bg: #1a1a1a;
+    --meta-text: #aaaaaa;
+    --panel-bg: #1e1e1e;
+    --link-hover: #4da6ff;
+    --secondary-bg: #181818;
+}
+
+/* ==========================================================================
+   2. RESET & BASE
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+    transition: color 0.2s ease;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ==========================================================================
+   3. HEADER, NAVIGATION, FOOTER, THEME TOGGLE
+   ========================================================================== */
+header {
+    background-color: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.header-top {
+    text-align: center;
+    padding: 20px 0 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+    font-family: "Georgia", serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    color: var(--text-color);
+}
+
+nav {
+    display: flex;
+    justify-content: center;
+    padding: 15px 0;
+    background-color: var(--bg-color);
+    transition: background-color 0.3s ease;
+}
+
+nav ul {
+    display: flex;
+    list-style: none;
+    gap: 25px;
+}
+
+nav a {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: var(--meta-text);
+}
+
+nav a:hover {
+    color: var(--link-hover);
+}
+
+footer {
+    background-color: #111;
+    color: #aaa;
+    padding: 40px 0;
+    font-size: 0.9rem;
+    text-align: center;
+    border-top: 4px solid var(--link-hover);
+    flex-shrink: 0;
+    margin-top: auto;
+}
+
+.theme-toggle-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--text-color);
+    color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    transition: transform 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.theme-toggle-btn:hover { transform: scale(1.05); }
+
+/* ==========================================================================
+   4. FIGURES PAGE
+   ========================================================================== */
+.figures-main {
+    flex: 1 0 auto;
+    width: 100%;
+    margin-top: 30px;
+    margin-bottom: 60px;
+}
+
+.figures-title {
+    font-size: 2rem;
+    text-transform: uppercase;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+    border-bottom: 3px solid var(--text-color);
+}
+
+.figures-subtitle {
+    margin-bottom: 25px;
+    color: var(--meta-text);
+}
+
+/* ---- Search ---- */
+.figures-search {
+    display: flex;
+    gap: 10px;
+    max-width: 520px;
+    margin-bottom: 40px;
+}
+
+.figures-search input {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    padding: 0 14px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.figures-search input:focus {
+    border-color: var(--text-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.15);
+}
+
+.figures-search-btn {
+    height: 44px;
+    padding: 0 22px;
+    background: var(--text-color);
+    color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.figures-search-btn:hover { opacity: 0.9; }
+
+/* ---- Loading / messages ---- */
+.figures-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 80px 20px;
+    color: var(--meta-text);
+}
+
+.figures-spinner {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 15px;
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--link-hover);
+    border-radius: 50%;
+    animation: figuresSpin 1s linear infinite;
+}
+
+@keyframes figuresSpin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.figures-message {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--meta-text);
+    font-size: 1.05rem;
+}
+
+/* ---- Sections ---- */
+.figures-section {
+    margin-bottom: 45px;
+}
+
+.figures-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--text-color);
+}
+
+.figures-count {
+    font-weight: 400;
+    color: var(--meta-text);
+}
+
+.figures-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+/* ---- Verified badge ---- */
+.verified-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--link-hover);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+[data-theme="dark"] .verified-badge {
+    color: #111;
+}
+
+/* ---- Cards ---- */
+.figure-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.3s ease;
+}
+
+.figure-card.verified {
+    border-top: 3px solid var(--link-hover);
+}
+
+.figure-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--link-hover);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.figure-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.figure-avatar {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    color: var(--meta-text);
+}
+
+.figure-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.figure-avatar svg {
+    width: 55%;
+    height: 55%;
+}
+
+.figure-names {
+    flex: 1;
+    min-width: 0; /* lets the name ellipsis work inside flex */
+}
+
+.figure-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: "Georgia", serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--text-color);
+}
+
+.figure-name-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.figure-card:hover .figure-name-text {
+    color: var(--link-hover);
+}
+
+.figure-aka {
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--meta-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.figure-bio {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.figure-bio.empty {
+    color: var(--meta-text);
+    font-style: italic;
+}
+
+.figure-latest {
+    display: flex;
+    flex-direction: column;
+    margin-top: auto; /* keeps this row at the bottom when cards have different heights */
+    padding-top: 12px;
+    border-top: 1px dashed var(--border-color);
+    font-size: 0.8rem;
+    color: var(--meta-text);
+}
+
+.figure-latest-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.figure-latest-title {
+    font-weight: 600;
+    color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

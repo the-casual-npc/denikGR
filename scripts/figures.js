@@ -299,13 +299,4 @@ function buildFigureCard(figure) {
     return card;
 }
 
-/* ==========================================================================
-   5. SEARCH (not implemented yet)
-   ========================================================================== */
-// TODO: filter figuresState.verified / figuresState.others by the typed text
-// (nickname, Minecraft name) and call renderFigures(filteredVerified, filteredOthers).
-byId('figuresSearchForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-});
-
 loadFigures();

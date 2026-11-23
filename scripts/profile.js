@@ -4,6 +4,8 @@
 // Data: users/<uid> -> { nickname, minecraftName, bio, photoURL, profileColor, verified }
 // Pictures: Storage at profiles/<uid>/avatar_<timestamp>.png
 
+import * as skinview3d from 'https://cdn.jsdelivr.net/npm/skinview3d@3.4.2/+esm';
+
 /* ==========================================================================
    1. CONFIGURATION
    ========================================================================== */
@@ -348,10 +350,42 @@ async function loadProfile(uid, user) {
 /* ==========================================================================
    5. VIEW MODE
    ========================================================================== */
-// TODO (later): draw the player's Minecraft skin into the container.
-// Called for verified players only; for now it intentionally renders nothing.
+// Draws the player's 3D Minecraft skin into the container (verified players only).
+let skinViewer = null;
+
 function renderSkin(container, profile) {
-    container.innerHTML = '';
+    // Dispose the previous viewer (renderProfile runs again after every save)
+    if (skinViewer) {
+        skinViewer.dispose();
+        skinViewer = null;
+    }
+
+    const username = (profile.minecraftName || '').trim();
+    if (!MC_NAME_PATTERN.test(username)) {
+        container.textContent = '';
+        return;
+    }
+
+    container.innerHTML = '<canvas id="skin_container"></canvas>';
+
+    skinViewer = new skinview3d.SkinViewer({
+        canvas: byId('skin_container'),
+        width: 300,
+        height: 400
+    });
+    skinViewer.animation = new skinview3d.WalkingAnimation();
+    skinViewer.autoRotate = true;
+
+    // Note: a template literal needs backticks and ${...}; plain quotes with {username}
+    // are sent to the server as the literal text "{username}".
+    const skinUrl = `https://minotar.net/skin/${encodeURIComponent(username)}`;
+
+    // loadSkin returns a promise; without .catch a failed image load becomes an
+    // "Uncaught (in promise)" error and the viewer stays empty.
+    skinViewer.loadSkin(skinUrl).catch((err) => {
+        console.warn('Could not load the skin of', username, err);
+        container.textContent = 'Skin se nepodařilo načíst.';
+    });
 }
 
 function renderProfile() {
